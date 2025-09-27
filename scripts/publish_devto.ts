@@ -3,6 +3,16 @@ import path from 'path';
 import matter from 'gray-matter';
 import fetch from 'node-fetch';
 
+type HttpError = Error & { status?: number };
+
+const createHttpError = (message: string, status?: number): HttpError => {
+  const error = new Error(message) as HttpError;
+  if (typeof status === 'number') {
+    error.status = status;
+  }
+  return error;
+};
+
 type FrontMatter = {
   title?: string;
   tags?: string[] | string;
@@ -80,6 +90,10 @@ const createOrUpdateArticle = async (
   const url = existingId ? `${API_BASE}/articles/${existingId}` : `${API_BASE}/articles`;
   const method = existingId ? 'PUT' : 'POST';
 
+  if (process.env.SIMULATE_DEVTO_404 === 'true' && existingId) {
+    throw createHttpError('Simulated missing dev.to article for testing.', 404);
+  }
+
   const response = await fetch(url, {
     method,
     headers: {
@@ -92,7 +106,7 @@ const createOrUpdateArticle = async (
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`dev.to API request failed (${response.status} ${response.statusText}): ${body}`);
+    throw createHttpError(`dev.to API request failed (${response.status} ${response.statusText}): ${body}`, response.status);
   }
 
   return (await response.json()) as { id: number; url?: string; updated_at?: string; published?: boolean };
@@ -189,7 +203,15 @@ const main = async (): Promise<void> => {
       };
       console.log(`${existingEntry ? 'Updated' : 'Created'} dev.to ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`);
     } catch (error) {
-      console.error(`Failed to ${shouldPublish ? 'publish' : 'draft'} ${relativePath}: ${(error as Error).message}`);
+      const apiError = error as HttpError;
+      if (apiError.status === 404 && existingEntry) {
+        delete postMap[relativePath];
+        console.warn(
+          `Remote dev.to ${shouldPublish ? 'article' : 'draft'} for ${relativePath} is missing (404). Removed mapping so it will be recreated on the next run.`,
+        );
+      }
+      const statusInfo = typeof apiError.status === 'number' ? ` [HTTP ${apiError.status}]` : '';
+      console.error(`Failed to ${shouldPublish ? 'publish' : 'draft'} ${relativePath}${statusInfo}: ${apiError.message}`);
       process.exitCode = 1;
     }
   }
