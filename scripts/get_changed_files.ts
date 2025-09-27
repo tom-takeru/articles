@@ -9,19 +9,35 @@ import path from 'path';
 const getChangedMarkdownFiles = (): { en: string[]; ja: string[] } => {
   try {
     // Get files changed in the working directory (staged + unstaged)
-    const diffOutput = execSync('git diff --name-only HEAD', { 
-      encoding: 'utf-8', 
-      cwd: process.cwd() 
+    const diffOutput = execSync('git diff --name-only HEAD', {
+      encoding: 'utf-8',
+      cwd: process.cwd()
     }).trim();
 
-    if (!diffOutput) {
-      console.log('No changed files detected.');
-      return { en: [], ja: [] };
+    // Capture untracked files (e.g., new drafts not yet staged)
+    const untrackedOutput = execSync('git ls-files --others --exclude-standard', {
+      encoding: 'utf-8',
+      cwd: process.cwd()
+    }).trim();
+
+    const changedFilesSet = new Set<string>();
+
+    if (diffOutput) {
+      diffOutput
+        .split('\n')
+        .filter(Boolean)
+        .forEach(file => changedFilesSet.add(file));
     }
 
-    const changedFiles = diffOutput.split('\n').filter(Boolean);
-    const markdownFiles = changedFiles.filter(file => 
-      file.endsWith('.md') && 
+    if (untrackedOutput) {
+      untrackedOutput
+        .split('\n')
+        .filter(Boolean)
+        .forEach(file => changedFilesSet.add(file));
+    }
+
+    const markdownFiles = Array.from(changedFilesSet).filter(file =>
+      file.endsWith('.md') &&
       (file.startsWith('content/en/') || file.startsWith('content/ja/')) &&
       fs.existsSync(path.resolve(file))
     );
