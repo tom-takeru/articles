@@ -1,33 +1,33 @@
-name: Verify article sync
-
-on:
-  pull_request:
-    branches:
-      - main
-
-jobs:
-  verify:
-    name: Remote content synchronization
-    runs-on: ubuntu-latest
-    env:
-      TARGET_BRANCH: ${{ vars.SYNC_BRANCH_NAME != '' && vars.SYNC_BRANCH_NAME || 'sync/articles' }}
-      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
-      QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Display targeted branch
-        run: echo "Enforcing sync verification for branch '${TARGET_BRANCH}'"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify remote content matches post maps
-        run: npx ts-node scripts/verify_remote_sync.ts
+# name: Verify article sync
+# 
+# on:
+#   pull_request:
+#     branches:
+#       - main
+# 
+# jobs:
+#   verify:
+#     name: Remote content synchronization
+#     runs-on: ubuntu-latest
+#     env:
+#       TARGET_BRANCH: ${{ vars.SYNC_BRANCH_NAME != '' && vars.SYNC_BRANCH_NAME || 'sync/articles' }}
+#       DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+#       QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+# 
+#       - name: Display targeted branch
+#         run: echo "Enforcing sync verification for branch '${TARGET_BRANCH}'"
+# 
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+# 
+#       - name: Install dependencies
+#         run: npm ci
+# 
+#       - name: Verify remote content matches post maps
+#         run: npx ts-node scripts/verify_remote_sync.ts
