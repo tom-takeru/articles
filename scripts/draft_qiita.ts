@@ -1,4 +1,4 @@
-import { runQiitaWorkflow } from './publish_qiita';
+import { runQiitaWorkflow } from './qiita';
 
 const runCli = async (): Promise<void> => {
   const fileArgs = process.argv.slice(2);
