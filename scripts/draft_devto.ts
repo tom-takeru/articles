@@ -1,4 +1,4 @@
-import { runDevtoWorkflow } from './publish_devto';
+import { runDevtoWorkflow } from './devto';
 
 const runCli = async (): Promise<void> => {
   const fileArgs = process.argv.slice(2);
