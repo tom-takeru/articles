@@ -38,7 +38,8 @@ platform: auto
 Body...
 ```
 
-- `tags`: Accepts an array or a comma-separated string.
+- `tags`: Accepts an array or a comma-separated string. Qiita enforces between 1 and 5 tags per article, so keep your list withi
+n that range when targeting Qiita.
 - `platform`: Omit or set to `auto` to target both platforms. Include `devto` or `qiita` to limit publishing.
 - `qiita_org`: Optional Qiita group identifier for organizational posts.
 - dev.to-specific keys such as `canonical_url`, `cover_image`, `series`, and `organization_id` are supported.
