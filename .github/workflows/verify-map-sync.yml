@@ -8,10 +8,6 @@ on:
 jobs:
   verify:
     name: Remote content synchronization
-    if: >-
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.ref ==
-      (vars.SYNC_BRANCH_NAME != '' && vars.SYNC_BRANCH_NAME || 'sync/articles')
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: ${{ vars.SYNC_BRANCH_NAME != '' && vars.SYNC_BRANCH_NAME || 'sync/articles' }}
