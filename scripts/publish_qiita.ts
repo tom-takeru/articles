@@ -17,6 +17,7 @@ type PostMapEntry = {
   id: string;
   url?: string;
   updatedAt?: string;
+  published?: boolean;
 };
 
 type PostMap = Record<string, PostMapEntry>;
@@ -80,7 +81,7 @@ const createOrUpdateQiitaItem = async (
   token: string,
   existingId: string | undefined,
   payload: unknown,
-): Promise<{ id: string; url?: string; updated_at?: string }> => {
+): Promise<{ id: string; url?: string; updated_at?: string; private?: boolean }> => {
   const pathSegment = existingId ? `/items/${existingId}` : '/items';
   const method = existingId ? 'PATCH' : 'POST';
 
@@ -99,7 +100,7 @@ const createOrUpdateQiitaItem = async (
     throw new Error(`Qiita API request failed (${response.status} ${response.statusText}): ${body}`);
   }
 
-  return (await response.json()) as { id: string; url?: string; updated_at?: string };
+  return (await response.json()) as { id: string; url?: string; updated_at?: string; private?: boolean };
 };
 
 const main = async (): Promise<void> => {
@@ -141,6 +142,25 @@ const main = async (): Promise<void> => {
       continue;
     }
 
+    const existingEntry = postMap[relativePath];
+    
+    // Validation logic based on publish mode
+    if (shouldPublish) {
+      // Publishing mode: ensure the article has been drafted at least once
+      if (!existingEntry) {
+        console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
+        process.exitCode = 1;
+        continue;
+      }
+    } else {
+      // Draft mode: ensure not already published
+      if (existingEntry?.published === true) {
+        console.error(`Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`);
+        process.exitCode = 1;
+        continue;
+      }
+    }
+
     const tags = ensureArrayOfStrings(frontMatter.tags);
 
     const itemPayload = {
@@ -154,16 +174,16 @@ const main = async (): Promise<void> => {
     };
 
     try {
-      const existingEntry = postMap[relativePath];
       const apiResponse = await createOrUpdateQiitaItem(token, existingEntry?.id, itemPayload);
       postMap[relativePath] = {
         id: apiResponse.id,
         url: apiResponse.url,
-        updatedAt: apiResponse.updated_at
+        updatedAt: apiResponse.updated_at,
+        published: shouldPublish
       };
-      console.log(`${existingEntry ? 'Updated' : 'Created'} Qiita draft: ${frontMatter.title}`);
+      console.log(`${existingEntry ? 'Updated' : 'Created'} Qiita ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`);
     } catch (error) {
-      console.error(`Failed to publish ${relativePath}: ${(error as Error).message}`);
+      console.error(`Failed to ${shouldPublish ? 'publish' : 'draft'} ${relativePath}: ${(error as Error).message}`);
       process.exitCode = 1;
     }
   }

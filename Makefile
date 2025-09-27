@@ -6,43 +6,75 @@ ifneq (,$(wildcard .env))
   export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help publish-devto publish-qiita publish
+.PHONY: draft publish clean help lint changed-files
 
-help:
-	@echo "Available targets:" \
-	  && echo "  make publish-devto DEVTO_FILES=\"content/en/article.md\"" \
-	  && echo "      Publish one or more English markdown files to dev.to." \
-	  && echo "  make publish-qiita QIITA_FILES=\"content/ja/article.md\"" \
-	  && echo "      Publish one or more Japanese markdown files to Qiita." \
-	  && echo "  make publish DEVTO_FILES=... QIITA_FILES=..." \
-	  && echo "      Publish to either platform (or both) in one command." \
-	  && echo "Environment variables are loaded from .env when present."
+# Default target
+.DEFAULT_GOAL := help
 
-publish-devto:
-	@if [ -z "$(DEVTO_FILES)" ]; then \
-	  echo "Set DEVTO_FILES to the space-separated list of English markdown files."; \
-	  echo "Example: make publish-devto DEVTO_FILES=\"content/en/article.md\""; \
-	  exit 1; \
-	fi
-	npx ts-node scripts/publish_devto.ts $(DEVTO_FILES)
+# Colors for output
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+RED := \033[0;31m
+NC := \033[0m # No Color
 
-publish-qiita:
-	@if [ -z "$(QIITA_FILES)" ]; then \
-	  echo "Set QIITA_FILES to the space-separated list of Japanese markdown files."; \
-	  echo "Example: make publish-qiita QIITA_FILES=\"content/ja/article.md\""; \
-	  exit 1; \
-	fi
-	npx ts-node scripts/publish_qiita.ts $(QIITA_FILES)
+help: ## Display this help message
+	@printf '$(GREEN)Article Publishing System$(NC)\n'
+	@printf '\n'
+	@printf 'Available commands:\n'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf '\n'
+	@printf 'Workflow:\n'
+	@printf "  1. Make changes to markdown files\n"
+	@printf "  2. Run '$(YELLOW)make draft$(NC)' to create/update drafts\n"
+	@printf "  3. Run '$(YELLOW)make publish$(NC)' to publish the drafts\n"
 
-publish:
-	@if [ -z "$(DEVTO_FILES)$(QIITA_FILES)" ]; then \
-	  echo "Provide at least DEVTO_FILES or QIITA_FILES."; \
-	  echo "Example: make publish DEVTO_FILES=\"content/en/article.md\" QIITA_FILES=\"content/ja/article.md\""; \
-	  exit 1; \
+lint: ## Type-check all TypeScript scripts
+	@printf '$(GREEN)Type-checking TypeScript files...$(NC)\n'
+	@npm run lint
+
+changed-files: ## Show which markdown files have changed
+	@printf '$(GREEN)Detecting changed markdown files...$(NC)\n'
+	@npx ts-node scripts/get_changed_files.ts
+
+draft: lint ## Create/update drafts for changed markdown files
+	@printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
+	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
+	if [ -n "$$EN_FILES" ]; then \
+		printf '$(YELLOW)Processing English files: %s$(NC)\n' "$$EN_FILES"; \
+		PUBLISH_MODE=draft npx ts-node scripts/publish_devto.ts $$EN_FILES; \
+	fi; \
+	if [ -n "$$JA_FILES" ]; then \
+		printf '$(YELLOW)Processing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
+		PUBLISH_MODE=draft npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
+	fi; \
+	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
+	else \
+		printf '$(GREEN)Draft operation completed!$(NC)\n'; \
 	fi
-	@if [ -n "$(DEVTO_FILES)" ]; then \
-	  $(MAKE) --no-print-directory publish-devto DEVTO_FILES="$(DEVTO_FILES)"; \
+
+publish: lint ## Publish drafts as real articles for changed markdown files
+	@printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
+	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
+	if [ -n "$$EN_FILES" ]; then \
+		printf '$(YELLOW)Publishing English files: %s$(NC)\n' "$$EN_FILES"; \
+		PUBLISH_MODE=publish npx ts-node scripts/publish_devto.ts $$EN_FILES; \
+	fi; \
+	if [ -n "$$JA_FILES" ]; then \
+		printf '$(YELLOW)Publishing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
+		PUBLISH_MODE=publish npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
+	fi; \
+	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
+	else \
+		printf '$(GREEN)Publish operation completed!$(NC)\n'; \
 	fi
-	@if [ -n "$(QIITA_FILES)" ]; then \
-	  $(MAKE) --no-print-directory publish-qiita QIITA_FILES="$(QIITA_FILES)"; \
-	fi
+
+clean: ## Clean up temporary files
+	@printf '$(GREEN)Cleaning up...$(NC)\n'
+	@find . -name "*.log" -type f -delete 2>/dev/null || true
+	@printf '$(GREEN)Clean completed!$(NC)\n'
