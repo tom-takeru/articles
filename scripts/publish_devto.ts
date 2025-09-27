@@ -141,14 +141,9 @@ const main = async (): Promise<void> => {
     
     // Validation logic based on publish mode
     if (shouldPublish) {
-      // Publishing mode: ensure draft exists first
+      // Publishing mode: ensure the article has been drafted at least once
       if (!existingEntry) {
         console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
-        process.exitCode = 1;
-        continue;
-      }
-      if (existingEntry.published === true) {
-        console.error(`Error: ${relativePath} - Already published. Make changes and run 'make draft' first to update the draft.`);
         process.exitCode = 1;
         continue;
       }
