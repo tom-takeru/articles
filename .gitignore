@@ -8,9 +8,6 @@ dist/
 .env
 .env.*
 
-# Local article metadata caches
-.posts-map.*.json
-
 # Logs and temp files
 npm-debug.log*
 yarn-debug.log*
