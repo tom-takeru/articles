@@ -38,41 +38,41 @@ changed-files: ## Show which markdown files have changed
 
 draft: lint ## Create/update drafts for changed markdown files
 	@printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
-        @CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
-        EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
-        JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
-        if [ -n "$$EN_FILES" ]; then \
-                printf '$(YELLOW)Processing English files: %s$(NC)\n' "$$EN_FILES"; \
-                npx ts-node scripts/draft_devto.ts $$EN_FILES; \
-        fi; \
-        if [ -n "$$JA_FILES" ]; then \
-                printf '$(YELLOW)Processing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
-                npx ts-node scripts/draft_qiita.ts $$JA_FILES; \
-        fi; \
-        if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
-                printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
-        else \
-                printf '$(GREEN)Draft operation completed!$(NC)\n'; \
-        fi
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
+	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
+	if [ -n "$$EN_FILES" ]; then \
+		printf '$(YELLOW)Processing English files: %s$(NC)\n' "$$EN_FILES"; \
+		npx ts-node scripts/draft_devto.ts $$EN_FILES; \
+	fi; \
+	if [ -n "$$JA_FILES" ]; then \
+		printf '$(YELLOW)Processing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
+		npx ts-node scripts/draft_qiita.ts $$JA_FILES; \
+	fi; \
+	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
+	else \
+		printf '$(GREEN)Draft operation completed!$(NC)\n'; \
+	fi
 
 publish: lint ## Publish drafts as real articles for changed markdown files
 	@printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
-        @CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
-        EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
-        JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
-        if [ -n "$$EN_FILES" ]; then \
-                printf '$(YELLOW)Publishing English files: %s$(NC)\n' "$$EN_FILES"; \
-                npx ts-node scripts/publish_devto.ts $$EN_FILES; \
-        fi; \
-        if [ -n "$$JA_FILES" ]; then \
-                printf '$(YELLOW)Publishing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
-                npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
-        fi; \
-        if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
-                printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
-        else \
-                printf '$(GREEN)Publish operation completed!$(NC)\n'; \
-        fi
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
+	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
+	if [ -n "$$EN_FILES" ]; then \
+		printf '$(YELLOW)Publishing English files: %s$(NC)\n' "$$EN_FILES"; \
+		npx ts-node scripts/publish_devto.ts $$EN_FILES; \
+	fi; \
+	if [ -n "$$JA_FILES" ]; then \
+		printf '$(YELLOW)Publishing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
+		npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
+	fi; \
+	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
+	else \
+		printf '$(GREEN)Publish operation completed!$(NC)\n'; \
+	fi
 
 clean: ## Clean up temporary files
 	@printf '$(GREEN)Cleaning up...$(NC)\n'
