@@ -2,12 +2,16 @@ name: Publish to Qiita
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'content/ja/**.md'
 
 jobs:
   publish-qiita:
     runs-on: ubuntu-latest
+    env:
+      PUBLISH_MODE: publish
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

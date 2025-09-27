@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 
 type FrontMatter = {
   title?: string;
-  published?: boolean;
   tags?: string[] | string;
   canonical_url?: string;
   cover_image?: string;
@@ -24,6 +23,18 @@ type PostMap = Record<string, PostMapEntry>;
 
 const API_BASE = 'https://dev.to/api';
 const MAP_FILE = '.posts-map.devto.json';
+
+const resolvePublishFlag = (): boolean => {
+  const mode = (process.env.PUBLISH_MODE ?? 'draft').toLowerCase();
+  if (['publish', 'published', 'release', 'public'].includes(mode)) {
+    return true;
+  }
+  if (['draft', 'preview', 'dry-run'].includes(mode)) {
+    return false;
+  }
+  console.warn(`Unknown PUBLISH_MODE "${mode}". Falling back to draft.`);
+  return false;
+};
 
 const wantsDevTo = (platform: FrontMatter['platform']): boolean => {
   if (!platform) return true;
@@ -99,6 +110,8 @@ const main = async (): Promise<void> => {
   }
 
   const mapPath = path.resolve(MAP_FILE);
+  const shouldPublish = resolvePublishFlag();
+  console.log(`Publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
   const postMap = loadPostMap(mapPath);
 
   for (const fileArg of fileArgs) {
@@ -128,7 +141,7 @@ const main = async (): Promise<void> => {
     const articlePayload = {
       article: {
         title: frontMatter.title,
-        published: Boolean(frontMatter.published),
+        published: shouldPublish,
         body_markdown: parsed.content.trim(),
         tags,
         canonical_url: frontMatter.canonical_url,

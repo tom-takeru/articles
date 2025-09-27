@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 
 type FrontMatter = {
   title?: string;
-  published?: boolean;
   tags?: string[] | string;
   canonical_url?: string;
   cover_image?: string;
@@ -24,6 +23,18 @@ type PostMap = Record<string, PostMapEntry>;
 
 const API_BASE = 'https://qiita.com/api/v2';
 const MAP_FILE = '.posts-map.qiita.json';
+
+const resolvePublishFlag = (): boolean => {
+  const mode = (process.env.PUBLISH_MODE ?? 'draft').toLowerCase();
+  if (['publish', 'published', 'release', 'public'].includes(mode)) {
+    return true;
+  }
+  if (['draft', 'preview', 'dry-run'].includes(mode)) {
+    return false;
+  }
+  console.warn(`Unknown PUBLISH_MODE "${mode}". Falling back to draft.`);
+  return false;
+};
 
 const wantsQiita = (platform: FrontMatter['platform']): boolean => {
   if (!platform) return true;
@@ -104,6 +115,8 @@ const main = async (): Promise<void> => {
   }
 
   const mapPath = path.resolve(MAP_FILE);
+  const shouldPublish = resolvePublishFlag();
+  console.log(`Publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
   const postMap = loadPostMap(mapPath);
 
   for (const fileArg of fileArgs) {
@@ -134,7 +147,7 @@ const main = async (): Promise<void> => {
       title: frontMatter.title,
       body: parsed.content.trim(),
       tags: toQiitaTags(tags),
-      private: !frontMatter.published,
+      private: !shouldPublish,
       coediting: false,
       group_url_name: frontMatter.qiita_org,
       tweet: false
