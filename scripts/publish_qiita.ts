@@ -162,6 +162,13 @@ const main = async (): Promise<void> => {
     }
 
     const tags = ensureArrayOfStrings(frontMatter.tags);
+    if (!tags || tags.length < 1 || tags.length > 5) {
+      console.error(
+        `Error: ${relativePath} - Qiita requires between 1 and 5 tags; found ${tags ? tags.length : 0}. Update the front matter and try again.`,
+      );
+      process.exitCode = 1;
+      continue;
+    }
 
     const itemPayload = {
       title: frontMatter.title,
