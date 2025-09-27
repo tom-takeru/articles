@@ -78,6 +78,19 @@ GitHub Actions workflows previously handled publishing on pushes to `main`, but 
 - Keep `tags` and `platform` values consistent to reduce maintenance overhead; the scripts normalize both arrays and comma-separated strings.
 - To force a local public publish (rare), run the script with `PUBLISH_MODE=publish` so it mirrors the Makefile's publish target.
 
+### Simulating Missing Remote Drafts
+
+Both publishing scripts can mimic a removed remote draft so you can test the automatic cleanup logic locally:
+
+1. Create a draft normally so the `.posts-map.*.json` file records the remote ID.
+2. Re-run the script with the corresponding simulation flag set while keeping `PUBLISH_MODE=draft`:
+   ```bash
+   SIMULATE_DEVTO_404=true npx ts-node scripts/publish_devto.ts content/en/example.md
+   SIMULATE_QIITA_404=true npx ts-node scripts/publish_qiita.ts content/ja/example.md
+   ```
+3. The run logs that the remote draft is missing (HTTP 404), removes the saved mapping, and exits with a failure code so you notice the issue.
+4. Run the script again without the simulation flag; because the map entry was removed, the draft is recreated cleanly with a new ID.
+
 ## Troubleshooting
 
 - Errors like `DEVTO_API_KEY is not set.` or `QIITA_TOKEN is not set.` indicate missing environment variables or repository secrets.
