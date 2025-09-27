@@ -1,13 +1,13 @@
 # Article Publishing Workflow
 
-This repository lets you manage English and Japanese articles locally while publishing them to dev.to and Qiita. The TypeScript scripts and GitHub Actions read front matter to decide where each article should go, persist remote post IDs in `.posts-map.*.json`, and update existing drafts instead of creating duplicates.
+This repository lets you manage English and Japanese articles locally while publishing them to dev.to and Qiita. The Makefile-driven TypeScript scripts read front matter to decide where each article should go, persist remote post IDs in `.posts-map.*.json`, and update existing drafts instead of creating duplicates.
 
 ## Directory Layout
 
 - `content/en/` — English Markdown articles that target dev.to.
 - `content/ja/` — Japanese Markdown articles that target Qiita.
 - `scripts/` — Platform-specific publishing scripts (`publish_devto.ts`, `publish_qiita.ts`).
-- `.posts-map.devto.json` / `.posts-map.qiita.json` — Maps article file paths to remote post IDs, URLs, and timestamps. Both local runs and GitHub Actions keep these files in sync.
+- `.posts-map.devto.json` / `.posts-map.qiita.json` — Maps article file paths to remote post IDs, URLs, timestamps, and publish state. Local runs keep these files in sync.
 
 ## Setup
 
@@ -45,53 +45,39 @@ Body...
 
 ## Local Publishing
 
-Explicitly pass the files you changed. Multiple paths are processed sequentially.
+The Make targets auto-detect modified Markdown under `content/en/` and `content/ja/` by diffing against `HEAD`. Stage only the files you want to process (or stash unrelated changes) before running the commands below.
 
-- Publish or update on dev.to:
+- Inspect which localized files will run:
   ```bash
-  npx ts-node scripts/publish_devto.ts content/en/example.md
+  make changed-files
   ```
-- Publish or update on Qiita:
+- Create or update drafts (uses `PUBLISH_MODE=draft`):
   ```bash
-  npx ts-node scripts/publish_qiita.ts content/ja/example.md
+  make draft
+  ```
+- Publish the pending drafts (uses `PUBLISH_MODE=publish` and requires the drafts to exist already):
+  ```bash
+  make publish
   ```
 
-After each run, the relevant `.posts-map.*.json` file is updated so future executions reference the correct remote post. Missing files or front matter issues cause the script to skip the entry and log a warning. By default (with no extra environment variables) the scripts create drafts, so you can preview articles safely before the CI job performs the public publish. Set `PUBLISH_MODE=publish` explicitly if you need to publish from your machine for exceptional cases.
+Each run updates the corresponding `.posts-map.*.json` file with the latest remote IDs, URLs, timestamps, and publish state. The scripts validate that drafts exist before publishing and prevent overwriting already-published posts without re-drafting.
 
-## GitHub Actions
+### Draft vs. Publish Modes
 
-### Shared Behavior
+`PUBLISH_MODE` defaults to `draft` for local development. The Makefile sets it automatically for each target, so you rarely need to override it manually. Publishing without an existing draft exits early with a helpful error so you can run `make draft` first.
 
-- Both workflows run on `ubuntu-latest`, use `actions/checkout@v4` plus `actions/setup-node@v4` to provision Node.js 20, and set `PUBLISH_MODE=publish` so the main branch produces public posts.
-- Dependencies are installed with `npm install`, then the appropriate TypeScript script runs via `npx ts-node`.
-- Repository secrets `DEVTO_API_KEY` and `QIITA_TOKEN` must be configured for the workflows to authenticate.
+### Automation
 
-### Publish to dev.to (`.github/workflows/publish_devto.yml`)
-
-- Trigger: Any `push` to `main` that modifies files under `content/en/**.md`.
-- Steps:
-  1. Diff the previous commit and collect Markdown files under `content/en/`.
-  2. If no English files changed, the job prints "No English markdown files changed. Skipping." and exits.
-  3. Otherwise, it runs `scripts/publish_devto.ts` with the changed paths to create or update dev.to drafts.
-- On success, `.posts-map.devto.json` captures the remote ID, URL, and last updated timestamp for each article.
-
-### Publish to Qiita (`.github/workflows/publish_qiita.yml`)
-
-- Trigger: Any `push` to `main` that modifies files under `content/ja/**.md`.
-- Steps:
-  1. Diff the previous commit and collect Markdown files under `content/ja/`.
-  2. If no Japanese files changed, the job prints "No Japanese markdown files changed. Skipping." and exits.
-  3. Otherwise, it runs `scripts/publish_qiita.ts` with the changed paths to create or update Qiita drafts or public posts.
-- Because the workflow forces `PUBLISH_MODE=publish`, merged changes are published publicly; local runs without the flag stay private drafts. `.posts-map.qiita.json` stores the remote metadata just like the dev.to map.
+GitHub Actions workflows previously handled publishing on pushes to `main`, but the automation has been retired. Keep using the Make targets locally (or wire them into a different CI/CD system) to manage publication.
 
 ## Operational Tips
 
 - Run `npm run lint` before opening a PR to ensure the scripts pass TypeScript checks.
 - If a remote article was deleted or its URL changed, remove the corresponding entry from `.posts-map.*.json` so the next run creates a fresh post.
 - Keep `tags` and `platform` values consistent to reduce maintenance overhead; the scripts normalize both arrays and comma-separated strings.
-- To force a local public publish (rare), run the script with `PUBLISH_MODE=publish` so it mirrors the CI behavior.
+- To force a local public publish (rare), run the script with `PUBLISH_MODE=publish` so it mirrors the Makefile's publish target.
 
 ## Troubleshooting
 
 - Errors like `DEVTO_API_KEY is not set.` or `QIITA_TOKEN is not set.` indicate missing environment variables or repository secrets.
-- When an API call fails, the script logs the response body and exits with code 1. GitHub Actions treats this as a failed workflow run, making it clear that publication did not complete.
+- When an API call fails, the script logs the response body and exits with code 1. This makes it clear that publication did not complete.

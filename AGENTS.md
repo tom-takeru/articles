@@ -10,14 +10,15 @@
 
 - `npm install` — install TypeScript toolchain and runtime dependencies.
 - `npm run lint` — run `tsc --noEmit` to type-check all scripts for regressions.
-- `npx ts-node scripts/publish_devto.ts content/en/example.md` — publish or update the given article on dev.to (respects `platform` front matter and updates `.posts-map.devto.json`).
-- `npx ts-node scripts/publish_qiita.ts content/ja/example.md` — mirror workflow for Qiita.
+- `make changed-files` — preview which localized Markdown files will be processed.
+- `make draft` — auto-detect changed Markdown and update drafts on dev.to and/or Qiita with `PUBLISH_MODE=draft`.
+- `make publish` — publish the pending drafts detected above with `PUBLISH_MODE=publish`.
 
 ## Coding Style & Naming Conventions
 
 - Use TypeScript with two-space indentation, `const` by default, and `camelCase` variables/functions. Reserve `PascalCase` for types and exported classes.
 - Keep modules focused; co-locate utilities near publishing scripts instead of global helpers until reuse is proven.
-- Front matter must include `title`; optional keys (`tags`, `platform`, `published`, etc.) align with downstream platform schemas.
+- Front matter must include `title`; optional keys (`tags`, `platform`, `qiita_org`, etc.) align with downstream platform schemas. Publishing mode is controlled by the `PUBLISH_MODE` environment variable when running scripts.
 
 ## Testing Guidelines
 
