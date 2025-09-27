@@ -18,63 +18,63 @@ RED := \033[0;31m
 NC := \033[0m # No Color
 
 help: ## Display this help message
-	@echo "$(GREEN)Article Publishing System$(NC)"
-	@echo ""
-	@echo "Available commands:"
+	@printf '$(GREEN)Article Publishing System$(NC)\n'
+	@printf '\n'
+	@printf 'Available commands:\n'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-	@echo ""
-	@echo "Workflow:"
-	@echo "  1. Make changes to markdown files"
-	@echo "  2. Run '$(YELLOW)make draft$(NC)' to create/update drafts"
-	@echo "  3. Run '$(YELLOW)make publish$(NC)' to publish the drafts"
+	@printf '\n'
+	@printf 'Workflow:\n'
+	@printf "  1. Make changes to markdown files\n"
+	@printf "  2. Run '$(YELLOW)make draft$(NC)' to create/update drafts\n"
+	@printf "  3. Run '$(YELLOW)make publish$(NC)' to publish the drafts\n"
 
 lint: ## Type-check all TypeScript scripts
-	@echo "$(GREEN)Type-checking TypeScript files...$(NC)"
+	@printf '$(GREEN)Type-checking TypeScript files...$(NC)\n'
 	@npm run lint
 
 changed-files: ## Show which markdown files have changed
-	@echo "$(GREEN)Detecting changed markdown files...$(NC)"
+	@printf '$(GREEN)Detecting changed markdown files...$(NC)\n'
 	@npx ts-node scripts/get_changed_files.ts
 
 draft: lint ## Create/update drafts for changed markdown files
-	@echo "$(GREEN)Creating/updating drafts for changed files...$(NC)"
+	@printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
 	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
 	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
 	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
 	if [ -n "$$EN_FILES" ]; then \
-		echo "$(YELLOW)Processing English files: $$EN_FILES$(NC)"; \
+		printf '$(YELLOW)Processing English files: %s$(NC)\n' "$$EN_FILES"; \
 		PUBLISH_MODE=draft npx ts-node scripts/publish_devto.ts $$EN_FILES; \
 	fi; \
 	if [ -n "$$JA_FILES" ]; then \
-		echo "$(YELLOW)Processing Japanese files: $$JA_FILES$(NC)"; \
+		printf '$(YELLOW)Processing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
 		PUBLISH_MODE=draft npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
 	fi; \
 	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
-		echo "$(YELLOW)No changed markdown files found. Nothing to do.$(NC)"; \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
 	else \
-		echo "$(GREEN)Draft operation completed!$(NC)"; \
+		printf '$(GREEN)Draft operation completed!$(NC)\n'; \
 	fi
 
 publish: lint ## Publish drafts as real articles for changed markdown files
-	@echo "$(GREEN)Publishing drafts as real articles...$(NC)"
+	@printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
 	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
 	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
 	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
 	if [ -n "$$EN_FILES" ]; then \
-		echo "$(YELLOW)Publishing English files: $$EN_FILES$(NC)"; \
+		printf '$(YELLOW)Publishing English files: %s$(NC)\n' "$$EN_FILES"; \
 		PUBLISH_MODE=publish npx ts-node scripts/publish_devto.ts $$EN_FILES; \
 	fi; \
 	if [ -n "$$JA_FILES" ]; then \
-		echo "$(YELLOW)Publishing Japanese files: $$JA_FILES$(NC)"; \
+		printf '$(YELLOW)Publishing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
 		PUBLISH_MODE=publish npx ts-node scripts/publish_qiita.ts $$JA_FILES; \
 	fi; \
 	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
-		echo "$(YELLOW)No changed markdown files found. Nothing to do.$(NC)"; \
+		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
 	else \
-		echo "$(GREEN)Publish operation completed!$(NC)"; \
+		printf '$(GREEN)Publish operation completed!$(NC)\n'; \
 	fi
 
 clean: ## Clean up temporary files
-	@echo "$(GREEN)Cleaning up...$(NC)"
+	@printf '$(GREEN)Cleaning up...$(NC)\n'
 	@find . -name "*.log" -type f -delete 2>/dev/null || true
-	@echo "$(GREEN)Clean completed!$(NC)"
+	@printf '$(GREEN)Clean completed!$(NC)\n'
