@@ -71,6 +71,14 @@ Each run updates the corresponding `.posts-map.*.json` file with the latest remo
 
 GitHub Actions workflows previously handled publishing on pushes to `main`, but the automation has been retired. Keep using the Make targets locally (or wire them into a different CI/CD system) to manage publication.
 
+#### Remote sync enforcement
+
+The `Verify article sync` workflow blocks merges when a synchronization branch targets `main` but remote articles are out of date.
+
+- By default the workflow watches for pull requests whose head branch is `sync/articles`. You can override the branch name by defining a repository variable called `SYNC_BRANCH_NAME`.
+- The check runs `scripts/verify_remote_sync.ts`, which confirms that the markdown content and titles for every entry in `.posts-map.devto.json` and `.posts-map.qiita.json` match their respective remote articles. It also validates that stored URLs, publish flags, and timestamps are in sync.
+- Repository secrets named `DEVTO_API_KEY` and `QIITA_TOKEN` are required so the script can query private drafts.
+
 ## Operational Tips
 
 - Run `npm run lint` before opening a PR to ensure the scripts pass TypeScript checks.
