@@ -117,12 +117,16 @@ const main = async (): Promise<void> => {
 
   for (const fileArg of fileArgs) {
     const absolutePath = path.resolve(fileArg);
+    const relativePath = path.relative(process.cwd(), absolutePath);
+
     if (!fs.existsSync(absolutePath)) {
+      if (postMap[relativePath]) {
+        delete postMap[relativePath];
+        console.log(`Removed stale dev.to mapping for ${relativePath} (file not found)`);
+      }
       console.warn(`Skipped: ${fileArg} (file not found)`);
       continue;
     }
-
-    const relativePath = path.relative(process.cwd(), absolutePath);
     const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
     const parsed = matter(rawMarkdown);
     const frontMatter = parsed.data as FrontMatter;
@@ -133,6 +137,10 @@ const main = async (): Promise<void> => {
     }
 
     if (!wantsDevTo(frontMatter.platform)) {
+      if (postMap[relativePath]) {
+        delete postMap[relativePath];
+        console.log(`Removed stale dev.to mapping for ${relativePath} (platform excludes dev.to)`);
+      }
       console.log(`Skipped: ${relativePath} (platform excludes dev.to)`);
       continue;
     }
