@@ -37,7 +37,7 @@ changed-files: ## Show which markdown files have changed
 	@npx ts-node scripts/get_changed_files.ts
 
 draft: lint ## Create/update drafts for changed markdown files
-        @printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
+	@printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
         @CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
         EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
         JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
@@ -56,7 +56,7 @@ draft: lint ## Create/update drafts for changed markdown files
         fi
 
 publish: lint ## Publish drafts as real articles for changed markdown files
-        @printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
+	@printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
         @CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
         EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
         JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
