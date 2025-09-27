@@ -3,17 +3,16 @@ import path from 'path';
 import matter from 'gray-matter';
 import fetch from 'node-fetch';
 
-type HttpError = Error & { status?: number };
+import {
+  HttpError,
+  createHttpError,
+  ensureArrayOfStrings,
+  loadPostMap,
+  savePostMap,
+  wantsPlatform
+} from './utils';
 
-const createHttpError = (message: string, status?: number): HttpError => {
-  const error = new Error(message) as HttpError;
-  if (typeof status === 'number') {
-    error.status = status;
-  }
-  return error;
-};
-
-type FrontMatter = {
+type QiitaFrontMatter = {
   title?: string;
   tags?: string[] | string;
   canonical_url?: string;
@@ -23,68 +22,21 @@ type FrontMatter = {
   qiita_org?: string;
 };
 
-type PostMapEntry = {
+type QiitaPostMapEntry = {
   id: string;
   url?: string;
   updatedAt?: string;
   published?: boolean;
 };
 
-type PostMap = Record<string, PostMapEntry>;
+const QIITA_API_BASE = 'https://qiita.com/api/v2';
+const QIITA_POST_MAP = '.posts-map.qiita.json';
 
-const API_BASE = 'https://qiita.com/api/v2';
-const MAP_FILE = '.posts-map.qiita.json';
-
-const resolvePublishFlag = (): boolean => {
-  const mode = (process.env.PUBLISH_MODE ?? 'draft').toLowerCase();
-  if (['publish', 'published', 'release', 'public'].includes(mode)) {
-    return true;
-  }
-  if (['draft', 'preview', 'dry-run'].includes(mode)) {
-    return false;
-  }
-  console.warn(`Unknown PUBLISH_MODE "${mode}". Falling back to draft.`);
-  return false;
-};
-
-const wantsQiita = (platform: FrontMatter['platform']): boolean => {
-  if (!platform) return true;
-  if (typeof platform === 'string') {
-    const normalized = platform.toLowerCase();
-    if (normalized === 'auto') return true;
-    return normalized.split(',').map((token) => token.trim()).includes('qiita');
-  }
-  return platform.map((token) => token.toLowerCase()).includes('qiita');
-};
-
-const ensureArrayOfStrings = (value: FrontMatter['tags']): string[] | undefined => {
-  if (!value) return undefined;
-  if (Array.isArray(value)) return value.map((item) => String(item));
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-};
+const wantsQiita = (platform: QiitaFrontMatter['platform']): boolean => wantsPlatform(platform, 'qiita');
 
 const toQiitaTags = (tags?: string[]): { name: string; versions: string[] }[] => {
   if (!tags) return [];
-  return tags.map((tag) => ({ name: tag, versions: [] }));
-};
-
-const loadPostMap = (mapPath: string): PostMap => {
-  try {
-    const raw = fs.readFileSync(mapPath, 'utf-8');
-    return JSON.parse(raw) as PostMap;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return {};
-    }
-    throw error;
-  }
-};
-
-const savePostMap = (mapPath: string, data: PostMap): void => {
-  fs.writeFileSync(mapPath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
+  return tags.map(tag => ({ name: tag, versions: [] }));
 };
 
 const createOrUpdateQiitaItem = async (
@@ -99,7 +51,7 @@ const createOrUpdateQiitaItem = async (
     throw createHttpError('Simulated missing Qiita draft for testing.', 404);
   }
 
-  const response = await fetch(`${API_BASE}${pathSegment}`, {
+  const response = await fetch(`${QIITA_API_BASE}${pathSegment}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
@@ -117,22 +69,23 @@ const createOrUpdateQiitaItem = async (
   return (await response.json()) as { id: string; url?: string; updated_at?: string; private?: boolean };
 };
 
-const main = async (): Promise<void> => {
+export const runQiitaWorkflow = async (
+  fileArgs: string[],
+  shouldPublish: boolean,
+): Promise<void> => {
   const token = process.env.QIITA_TOKEN;
   if (!token) {
     throw new Error('QIITA_TOKEN is not set.');
   }
 
-  const fileArgs = process.argv.slice(2);
   if (fileArgs.length === 0) {
-    console.log('No content files provided. Nothing to do.');
+    console.log('No Japanese content files provided. Nothing to do for Qiita.');
     return;
   }
 
-  const mapPath = path.resolve(MAP_FILE);
-  const shouldPublish = resolvePublishFlag();
-  console.log(`Publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
-  const postMap = loadPostMap(mapPath);
+  const mapPath = path.resolve(QIITA_POST_MAP);
+  console.log(`Qiita publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
+  const postMap = loadPostMap<QiitaPostMapEntry>(mapPath);
 
   for (const fileArg of fileArgs) {
     const absolutePath = path.resolve(fileArg);
@@ -146,9 +99,10 @@ const main = async (): Promise<void> => {
       console.warn(`Skipped: ${fileArg} (file not found)`);
       continue;
     }
+
     const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
     const parsed = matter(rawMarkdown);
-    const frontMatter = parsed.data as FrontMatter;
+    const frontMatter = parsed.data as QiitaFrontMatter;
 
     if (!frontMatter.title) {
       console.warn(`Skipped: ${relativePath} (missing required front matter field: title)`);
@@ -165,22 +119,19 @@ const main = async (): Promise<void> => {
     }
 
     const existingEntry = postMap[relativePath];
-    
-    // Validation logic based on publish mode
+
     if (shouldPublish) {
-      // Publishing mode: ensure the article has been drafted at least once
       if (!existingEntry) {
         console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
         process.exitCode = 1;
         continue;
       }
-    } else {
-      // Draft mode: ensure not already published
-      if (existingEntry?.published === true) {
-        console.error(`Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`);
-        process.exitCode = 1;
-        continue;
-      }
+    } else if (existingEntry?.published === true) {
+      console.error(
+        `Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`,
+      );
+      process.exitCode = 1;
+      continue;
     }
 
     const tags = ensureArrayOfStrings(frontMatter.tags);
@@ -228,7 +179,14 @@ const main = async (): Promise<void> => {
   savePostMap(mapPath, postMap);
 };
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+const runCli = async (): Promise<void> => {
+  const fileArgs = process.argv.slice(2);
+  await runQiitaWorkflow(fileArgs, true);
+};
+
+if (require.main === module) {
+  runCli().catch(error => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
