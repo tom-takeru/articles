@@ -3,17 +3,16 @@ import path from 'path';
 import matter from 'gray-matter';
 import fetch from 'node-fetch';
 
-type HttpError = Error & { status?: number };
+import {
+  HttpError,
+  createHttpError,
+  ensureArrayOfStrings,
+  loadPostMap,
+  savePostMap,
+  wantsPlatform
+} from './utils';
 
-const createHttpError = (message: string, status?: number): HttpError => {
-  const error = new Error(message) as HttpError;
-  if (typeof status === 'number') {
-    error.status = status;
-  }
-  return error;
-};
-
-type FrontMatter = {
+type DevtoFrontMatter = {
   title?: string;
   tags?: string[] | string;
   canonical_url?: string;
@@ -23,71 +22,24 @@ type FrontMatter = {
   platform?: string | string[];
 };
 
-type PostMapEntry = {
+type DevtoPostMapEntry = {
   id: number;
   url?: string;
   updatedAt?: string;
   published?: boolean;
 };
 
-type PostMap = Record<string, PostMapEntry>;
+const DEVTO_API_BASE = 'https://dev.to/api';
+const DEVTO_POST_MAP = '.posts-map.devto.json';
 
-const API_BASE = 'https://dev.to/api';
-const MAP_FILE = '.posts-map.devto.json';
+const wantsDevto = (platform: DevtoFrontMatter['platform']): boolean => wantsPlatform(platform, 'devto');
 
-const resolvePublishFlag = (): boolean => {
-  const mode = (process.env.PUBLISH_MODE ?? 'draft').toLowerCase();
-  if (['publish', 'published', 'release', 'public'].includes(mode)) {
-    return true;
-  }
-  if (['draft', 'preview', 'dry-run'].includes(mode)) {
-    return false;
-  }
-  console.warn(`Unknown PUBLISH_MODE "${mode}". Falling back to draft.`);
-  return false;
-};
-
-const wantsDevTo = (platform: FrontMatter['platform']): boolean => {
-  if (!platform) return true;
-  if (typeof platform === 'string') {
-    const normalized = platform.toLowerCase();
-    if (normalized === 'auto') return true;
-    return normalized.split(',').map((token) => token.trim()).includes('devto');
-  }
-  return platform.map((token) => token.toLowerCase()).includes('devto');
-};
-
-const ensureArrayOfStrings = (value: FrontMatter['tags']): string[] | undefined => {
-  if (!value) return undefined;
-  if (Array.isArray(value)) return value.map((item) => String(item));
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-};
-
-const loadPostMap = (mapPath: string): PostMap => {
-  try {
-    const raw = fs.readFileSync(mapPath, 'utf-8');
-    return JSON.parse(raw) as PostMap;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return {};
-    }
-    throw error;
-  }
-};
-
-const savePostMap = (mapPath: string, data: PostMap): void => {
-  fs.writeFileSync(mapPath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
-};
-
-const createOrUpdateArticle = async (
+const createOrUpdateDevtoArticle = async (
   token: string,
   existingId: number | undefined,
   payload: unknown,
 ): Promise<{ id: number; url?: string; updated_at?: string; published?: boolean }> => {
-  const url = existingId ? `${API_BASE}/articles/${existingId}` : `${API_BASE}/articles`;
+  const url = existingId ? `${DEVTO_API_BASE}/articles/${existingId}` : `${DEVTO_API_BASE}/articles`;
   const method = existingId ? 'PUT' : 'POST';
 
   if (process.env.SIMULATE_DEVTO_404 === 'true' && existingId) {
@@ -112,22 +64,23 @@ const createOrUpdateArticle = async (
   return (await response.json()) as { id: number; url?: string; updated_at?: string; published?: boolean };
 };
 
-const main = async (): Promise<void> => {
+export const runDevtoWorkflow = async (
+  fileArgs: string[],
+  shouldPublish: boolean,
+): Promise<void> => {
   const apiKey = process.env.DEVTO_API_KEY;
   if (!apiKey) {
     throw new Error('DEVTO_API_KEY is not set.');
   }
 
-  const fileArgs = process.argv.slice(2);
   if (fileArgs.length === 0) {
-    console.log('No content files provided. Nothing to do.');
+    console.log('No English content files provided. Nothing to do for dev.to.');
     return;
   }
 
-  const mapPath = path.resolve(MAP_FILE);
-  const shouldPublish = resolvePublishFlag();
-  console.log(`Publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
-  const postMap = loadPostMap(mapPath);
+  const mapPath = path.resolve(DEVTO_POST_MAP);
+  console.log(`dev.to publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
+  const postMap = loadPostMap<DevtoPostMapEntry>(mapPath);
 
   for (const fileArg of fileArgs) {
     const absolutePath = path.resolve(fileArg);
@@ -141,16 +94,17 @@ const main = async (): Promise<void> => {
       console.warn(`Skipped: ${fileArg} (file not found)`);
       continue;
     }
+
     const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
     const parsed = matter(rawMarkdown);
-    const frontMatter = parsed.data as FrontMatter;
+    const frontMatter = parsed.data as DevtoFrontMatter;
 
     if (!frontMatter.title) {
       console.warn(`Skipped: ${relativePath} (missing required front matter field: title)`);
       continue;
     }
 
-    if (!wantsDevTo(frontMatter.platform)) {
+    if (!wantsDevto(frontMatter.platform)) {
       if (postMap[relativePath]) {
         delete postMap[relativePath];
         console.log(`Removed stale dev.to mapping for ${relativePath} (platform excludes dev.to)`);
@@ -160,22 +114,19 @@ const main = async (): Promise<void> => {
     }
 
     const existingEntry = postMap[relativePath];
-    
-    // Validation logic based on publish mode
+
     if (shouldPublish) {
-      // Publishing mode: ensure the article has been drafted at least once
       if (!existingEntry) {
         console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
         process.exitCode = 1;
         continue;
       }
-    } else {
-      // Draft mode: ensure not already published
-      if (existingEntry?.published === true) {
-        console.error(`Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`);
-        process.exitCode = 1;
-        continue;
-      }
+    } else if (existingEntry?.published === true) {
+      console.error(
+        `Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`,
+      );
+      process.exitCode = 1;
+      continue;
     }
 
     const tags = ensureArrayOfStrings(frontMatter.tags);
@@ -194,7 +145,7 @@ const main = async (): Promise<void> => {
     };
 
     try {
-      const apiResponse = await createOrUpdateArticle(apiKey, existingEntry?.id, articlePayload);
+      const apiResponse = await createOrUpdateDevtoArticle(apiKey, existingEntry?.id, articlePayload);
       postMap[relativePath] = {
         id: apiResponse.id,
         url: apiResponse.url,
@@ -219,7 +170,14 @@ const main = async (): Promise<void> => {
   savePostMap(mapPath, postMap);
 };
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+const runCli = async (): Promise<void> => {
+  const fileArgs = process.argv.slice(2);
+  await runDevtoWorkflow(fileArgs, true);
+};
+
+if (require.main === module) {
+  runCli().catch(error => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
