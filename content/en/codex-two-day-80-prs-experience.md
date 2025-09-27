@@ -165,7 +165,7 @@ With this loop, **I realized I had nearly 80 PRs ready within just two days.**
 - The art lies in precise task decomposition
   - Break work down in a way that Codex, acting as an engineer, can execute flawlessly
 - Architectural understanding still counts
-  - Knowing the big picture makes it easier to hand off scoped tasks
+  - When the person directing the work understands the big picture, it's much easier to break it into steps and delegate
 - For now, engineers gain the most
   - At this stage, engineers are the ones who can truly exploit these assistants
 - The next battle is vision
