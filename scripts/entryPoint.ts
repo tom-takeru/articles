@@ -1,5 +1,5 @@
-import { runDevtoWorkflow } from './devTo';
-import { runQiitaWorkflow } from './qiita';
+import { runDevtoWorkflow } from './platform/devto';
+import { runQiitaWorkflow } from './platform/qiita';
 
 type Platform = 'devto' | 'qiita';
 type Mode = 'draft' | 'publish';

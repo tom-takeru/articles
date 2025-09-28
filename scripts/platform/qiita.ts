@@ -1,9 +1,9 @@
 import fetch from 'node-fetch';
 
-import { createHttpError } from './utils/http';
-import { ensureArrayOfStrings, type QiitaFrontMatter } from './utils/frontMatter';
-import { wantsPlatform } from './utils/platform';
-import { PublishingAdapter, runPublishingWorkflow, ValidationResult } from './publishingWorkflowRunner';
+import { createHttpError } from '../utils/http';
+import { ensureArrayOfStrings, type QiitaFrontMatter } from '../utils/frontMatter';
+import { wantsPlatform } from '../utils/platform';
+import { PublishingAdapter, runPublishingWorkflow, ValidationResult } from '../publishingWorkflowRunner';
 
 type QiitaPostMapEntry = {
   id: string;
