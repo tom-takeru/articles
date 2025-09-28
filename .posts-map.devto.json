@@ -12,5 +12,12 @@
     "updatedAt": "2025-09-28T07:21:57Z",
     "publishedAt": "2025-09-28T07:21:57Z",
     "published": true
+  },
+  "content/en/staged-rollout-importance.md": {
+    "id": 2874590,
+    "url": "https://dev.to/tom-takeru/why-staged-rollouts-are-worth-the-effort-1dc2-temp-slug-32196",
+    "updatedAt": "2025-10-06T00:19:18.817Z",
+    "publishedAt": null,
+    "published": false
   }
 }
