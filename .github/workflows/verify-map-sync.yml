@@ -30,4 +30,4 @@ jobs:
         run: npm ci
 
       - name: Verify remote content matches post maps
-        run: npx ts-node scripts/verify_remote_sync.ts
+        run: npx ts-node scripts/verifyRemoteSync.ts

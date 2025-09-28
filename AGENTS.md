@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-- `scripts/` holds TypeScript automation. `run_publisher.ts` routes to the dev.to or Qiita workflows, which read Markdown front matter and push drafts to their platforms while persisting IDs in `.posts-map.*.json`.
+- `scripts/` holds TypeScript automation. `runPublisher.ts` routes to the dev.to or Qiita workflows, which read Markdown front matter and push drafts to their platforms while persisting IDs in `.posts-map.*.json`.
 - `content/` stores localized articles; use `content/en/` and `content/ja/` for language-specific Markdown with YAML front matter.
 - `tsconfig.json` defines common compiler options, and `package.json` lists runtime (`gray-matter`, `node-fetch`) plus tooling (`ts-node`, `typescript`).
 

@@ -34,20 +34,20 @@ lint: ## Type-check all TypeScript scripts
 
 changed-files: ## Show which markdown files have changed
 	@printf '$(GREEN)Detecting changed markdown files...$(NC)\n'
-	@npx ts-node scripts/get_changed_files.ts
+	@npx ts-node scripts/getChangedFiles.ts
 
 draft: lint ## Create/update drafts for changed markdown files
 	@printf '$(GREEN)Creating/updating drafts for changed files...$(NC)\n'
-	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/getChangedFiles.ts | tail -2); \
 	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
 	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
         if [ -n "$$EN_FILES" ]; then \
                 printf '$(YELLOW)Processing English files: %s$(NC)\n' "$$EN_FILES"; \
-                npx ts-node scripts/run_publisher.ts --platform devto --mode draft $$EN_FILES; \
+		npx ts-node scripts/runPublisher.ts --platform devto --mode draft $$EN_FILES; \
         fi; \
         if [ -n "$$JA_FILES" ]; then \
                 printf '$(YELLOW)Processing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
-                npx ts-node scripts/run_publisher.ts --platform qiita --mode draft $$JA_FILES; \
+		npx ts-node scripts/runPublisher.ts --platform qiita --mode draft $$JA_FILES; \
         fi; \
 	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
 		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
@@ -57,16 +57,16 @@ draft: lint ## Create/update drafts for changed markdown files
 
 publish: lint ## Publish drafts as real articles for changed markdown files
 	@printf '$(GREEN)Publishing drafts as real articles...$(NC)\n'
-	@CHANGED_OUTPUT=$$(npx ts-node scripts/get_changed_files.ts | tail -2); \
+	@CHANGED_OUTPUT=$$(npx ts-node scripts/getChangedFiles.ts | tail -2); \
 	EN_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^EN_FILES=" | cut -d'=' -f2-); \
 	JA_FILES=$$(echo "$$CHANGED_OUTPUT" | grep "^JA_FILES=" | cut -d'=' -f2-); \
         if [ -n "$$EN_FILES" ]; then \
                 printf '$(YELLOW)Publishing English files: %s$(NC)\n' "$$EN_FILES"; \
-                npx ts-node scripts/run_publisher.ts --platform devto --mode publish $$EN_FILES; \
+		npx ts-node scripts/runPublisher.ts --platform devto --mode publish $$EN_FILES; \
         fi; \
         if [ -n "$$JA_FILES" ]; then \
                 printf '$(YELLOW)Publishing Japanese files: %s$(NC)\n' "$$JA_FILES"; \
-                npx ts-node scripts/run_publisher.ts --platform qiita --mode publish $$JA_FILES; \
+		npx ts-node scripts/runPublisher.ts --platform qiita --mode publish $$JA_FILES; \
         fi; \
 	if [ -z "$$EN_FILES" ] && [ -z "$$JA_FILES" ]; then \
 		printf '$(YELLOW)No changed markdown files found. Nothing to do.$(NC)\n'; \
