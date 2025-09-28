@@ -6,7 +6,7 @@ This repository lets you manage English and Japanese articles locally while publ
 
 - `content/en/` — English Markdown articles that target dev.to.
 - `content/ja/` — Japanese Markdown articles that target Qiita.
-- `scripts/` — Publishing workflows plus the unified CLI entry point (`runPublisher.ts`).
+- `scripts/` — Publishing workflows plus the unified CLI entry point (`entryPoint.ts`).
 - `.posts-map.devto.json` / `.posts-map.qiita.json` — Maps article file paths to remote post IDs, URLs, timestamps, and publish state. Local runs keep these files in sync.
 
 ## Setup
@@ -93,8 +93,8 @@ Both publishing scripts can mimic a removed remote draft so you can test the aut
 1. Create a draft normally so the `.posts-map.*.json` file records the remote ID.
 2. Re-run the script with the corresponding simulation flag set while keeping `PUBLISH_MODE=draft`:
    ```bash
-   SIMULATE_DEVTO_404=true npx ts-node scripts/runPublisher.ts --platform devto --mode publish content/en/example.md
-   SIMULATE_QIITA_404=true npx ts-node scripts/runPublisher.ts --platform qiita --mode publish content/ja/example.md
+   SIMULATE_DEVTO_404=true npx ts-node scripts/entryPoint.ts --platform devto --mode publish content/en/example.md
+   SIMULATE_QIITA_404=true npx ts-node scripts/entryPoint.ts --platform qiita --mode publish content/ja/example.md
    ```
 3. The run logs that the remote draft is missing (HTTP 404), removes the saved mapping, and exits with a failure code so you notice the issue.
 4. Run the script again without the simulation flag; because the map entry was removed, the draft is recreated cleanly with a new ID.
