@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
 import fetch from 'node-fetch';
+
+import { readContentFile } from './content/front_matter';
 
 type DevToArticle = {
   id: number;
@@ -60,11 +61,8 @@ const readLocalArticle = (relativePath: string): { title: string; content: strin
   if (!fs.existsSync(absolutePath)) {
     throw new Error(`Local file ${relativePath} referenced in map is missing.`);
   }
-  const raw = fs.readFileSync(absolutePath, 'utf-8');
-  const parsed = matter(raw);
-  const title = typeof parsed.data.title === 'string' ? parsed.data.title : '';
-  const content = normalize(parsed.content);
-  return { title, content };
+  const parsed = readContentFile(absolutePath);
+  return { title: parsed.frontMatter.title, content: parsed.body };
 };
 
 const fetchDevToArticle = async (id: number, token: string): Promise<DevToArticle> => {

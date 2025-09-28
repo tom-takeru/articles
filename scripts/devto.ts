@@ -2,16 +2,7 @@ import fetch from 'node-fetch';
 
 import { createHttpError, ensureArrayOfStrings, wantsPlatform } from './utils';
 import { PublishingAdapter, runPublishingWorkflow } from './workflows/base';
-
-type DevtoFrontMatter = {
-  title?: string;
-  tags?: string[] | string;
-  canonical_url?: string;
-  cover_image?: string;
-  series?: string;
-  organization_id?: number;
-  platform?: string | string[];
-};
+import type { DevtoFrontMatter } from './content/front_matter';
 
 type DevtoPostMapEntry = {
   id: number;

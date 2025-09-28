@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
 
+import { readContentFile, type ParsedContent } from '../content/front_matter';
 import { HttpError, PlatformValue, loadPostMap, savePostMap } from '../utils';
 
 export type BaseFrontMatter = {
-  title?: string;
+  title: string;
   platform?: PlatformValue;
+  tags?: string[];
 };
 
 export type ValidateFrontMatterContext<FrontMatter, PostMapEntry> = {
@@ -110,9 +111,16 @@ export const runPublishingWorkflow = async <
       continue;
     }
 
-    const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
-    const parsed = matter(rawMarkdown);
-    const frontMatter = parsed.data as FrontMatter;
+    let parsed: ParsedContent<Record<string, unknown>>;
+    try {
+      parsed = readContentFile<Record<string, unknown>>(absolutePath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Skipped: ${relativePath} (${message})`);
+      continue;
+    }
+
+    const frontMatter = parsed.frontMatter as FrontMatter;
 
     if (!frontMatter.title) {
       console.warn(`Skipped: ${relativePath} (missing required front matter field: title)`);
@@ -169,7 +177,7 @@ export const runPublishingWorkflow = async <
       continue;
     }
 
-    const content = parsed.content.trim();
+    const content = parsed.body;
     const payload = adapter.preparePayload({
       frontMatter,
       content,
