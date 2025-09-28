@@ -1,16 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import fetch from 'node-fetch';
 
-import {
-  HttpError,
-  createHttpError,
-  ensureArrayOfStrings,
-  loadPostMap,
-  savePostMap,
-  wantsPlatform
-} from './utils';
+import { createHttpError, ensureArrayOfStrings, wantsPlatform } from './utils';
+import { PublishingAdapter, runPublishingWorkflow, ValidationResult } from './workflows/base';
 
 type QiitaFrontMatter = {
   title?: string;
@@ -83,100 +74,53 @@ export const runQiitaWorkflow = async (
     return;
   }
 
-  const mapPath = path.resolve(QIITA_POST_MAP);
-  console.log(`Qiita publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
-  const postMap = loadPostMap<QiitaPostMapEntry>(mapPath);
+  type QiitaValidationData = { tags: string[] };
 
-  for (const fileArg of fileArgs) {
-    const absolutePath = path.resolve(fileArg);
-    const relativePath = path.relative(process.cwd(), absolutePath);
-
-    if (!fs.existsSync(absolutePath)) {
-      if (postMap[relativePath]) {
-        delete postMap[relativePath];
-        console.log(`Removed stale Qiita mapping for ${relativePath} (file not found)`);
+  const adapter: PublishingAdapter<
+    QiitaFrontMatter,
+    QiitaPostMapEntry,
+    { id: string; url?: string; updated_at?: string; private?: boolean },
+    QiitaValidationData
+  > = {
+    platformName: 'Qiita',
+    mapFilename: QIITA_POST_MAP,
+    isPlatformEnabled: frontMatter => wantsQiita(frontMatter.platform),
+    validateFrontMatter: ({ frontMatter, relativePath }): ValidationResult<QiitaValidationData> => {
+      const tags = ensureArrayOfStrings(frontMatter.tags);
+      if (!tags || tags.length < 1 || tags.length > 5) {
+        return {
+          isValid: false,
+          message: `Error: ${relativePath} - Qiita requires between 1 and 5 tags; found ${tags ? tags.length : 0}. Update the front matter and try again.`,
+          level: 'error',
+          setExitCode: true
+        };
       }
-      console.warn(`Skipped: ${fileArg} (file not found)`);
-      continue;
-    }
+      return { isValid: true, sanitizedData: { tags } };
+    },
+    preparePayload: ({ frontMatter, content, shouldPublish, sanitizedData }) => {
+      const organizationUrlName = frontMatter.qiita_org?.trim();
 
-    const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
-    const parsed = matter(rawMarkdown);
-    const frontMatter = parsed.data as QiitaFrontMatter;
-
-    if (!frontMatter.title) {
-      console.warn(`Skipped: ${relativePath} (missing required front matter field: title)`);
-      continue;
-    }
-
-    if (!wantsQiita(frontMatter.platform)) {
-      if (postMap[relativePath]) {
-        delete postMap[relativePath];
-        console.log(`Removed stale Qiita mapping for ${relativePath} (platform excludes Qiita)`);
-      }
-      console.log(`Skipped: ${relativePath} (platform excludes Qiita)`);
-      continue;
-    }
-
-    const existingEntry = postMap[relativePath];
-
-    if (shouldPublish) {
-      if (!existingEntry) {
-        console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
-        process.exitCode = 1;
-        continue;
-      }
-    } else if (existingEntry?.published === true) {
-      console.error(
-        `Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`,
-      );
-      process.exitCode = 1;
-      continue;
-    }
-
-    const tags = ensureArrayOfStrings(frontMatter.tags);
-    if (!tags || tags.length < 1 || tags.length > 5) {
-      console.error(
-        `Error: ${relativePath} - Qiita requires between 1 and 5 tags; found ${tags ? tags.length : 0}. Update the front matter and try again.`,
-      );
-      process.exitCode = 1;
-      continue;
-    }
-
-    const organizationUrlName = frontMatter.qiita_org?.trim();
-
-    const itemPayload = {
-      title: frontMatter.title,
-      body: parsed.content.trim(),
-      tags: toQiitaTags(tags),
-      private: !shouldPublish,
-      coediting: false,
-      ...(organizationUrlName ? { organization_url_name: organizationUrlName } : {}),
-      tweet: false
-    };
-
-    try {
-      const apiResponse = await createOrUpdateQiitaItem(token, existingEntry?.id, itemPayload);
-      postMap[relativePath] = {
-        id: apiResponse.id,
-        url: apiResponse.url,
-        updatedAt: apiResponse.updated_at,
-        published: shouldPublish
+      return {
+        title: frontMatter.title,
+        body: content,
+        tags: toQiitaTags(sanitizedData?.tags),
+        private: !shouldPublish,
+        coediting: false,
+        ...(organizationUrlName ? { organization_url_name: organizationUrlName } : {}),
+        tweet: false
       };
-      console.log(`${existingEntry ? 'Updated' : 'Created'} Qiita ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`);
-    } catch (error) {
-      const apiError = error as HttpError;
-      if (apiError.status === 404 && existingEntry) {
-        delete postMap[relativePath];
-        console.warn(
-          `Remote Qiita ${shouldPublish ? 'article' : 'draft'} for ${relativePath} is missing (404). Removed mapping so it will be recreated on the next run.`,
-        );
-      }
-      const statusInfo = typeof apiError.status === 'number' ? ` [HTTP ${apiError.status}]` : '';
-      console.error(`Failed to ${shouldPublish ? 'publish' : 'draft'} ${relativePath}${statusInfo}: ${apiError.message}`);
-      process.exitCode = 1;
-    }
-  }
+    },
+    performRequest: ({ payload, existingEntry }) => createOrUpdateQiitaItem(token, existingEntry?.id, payload),
+    synchronizePostMapEntry: ({ frontMatter, existingEntry, response, shouldPublish }) => ({
+      entry: {
+        id: response.id,
+        url: response.url,
+        updatedAt: response.updated_at,
+        published: shouldPublish
+      },
+      message: `${existingEntry ? 'Updated' : 'Created'} Qiita ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`
+    })
+  };
 
-  savePostMap(mapPath, postMap);
+  await runPublishingWorkflow({ fileArgs, shouldPublish, adapter });
 };
