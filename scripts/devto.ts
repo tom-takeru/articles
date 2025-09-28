@@ -26,6 +26,7 @@ type DevtoPostMapEntry = {
   id: number;
   url?: string;
   updatedAt?: string;
+  publishedAt?: string;
   published?: boolean;
 };
 
@@ -34,11 +35,20 @@ const DEVTO_POST_MAP = '.posts-map.devto.json';
 
 const wantsDevto = (platform: DevtoFrontMatter['platform']): boolean => wantsPlatform(platform, 'devto');
 
+type DevtoApiArticle = {
+  id: number;
+  url?: string;
+  updated_at?: string;
+  edited_at?: string;
+  published_at?: string;
+  published?: boolean;
+};
+
 const createOrUpdateDevtoArticle = async (
   token: string,
   existingId: number | undefined,
   payload: unknown,
-): Promise<{ id: number; url?: string; updated_at?: string; published?: boolean }> => {
+): Promise<DevtoApiArticle> => {
   const url = existingId ? `${DEVTO_API_BASE}/articles/${existingId}` : `${DEVTO_API_BASE}/articles`;
   const method = existingId ? 'PUT' : 'POST';
 
@@ -61,7 +71,7 @@ const createOrUpdateDevtoArticle = async (
     throw createHttpError(`dev.to API request failed (${response.status} ${response.statusText}): ${body}`, response.status);
   }
 
-  return (await response.json()) as { id: number; url?: string; updated_at?: string; published?: boolean };
+  return (await response.json()) as DevtoApiArticle;
 };
 
 export const runDevtoWorkflow = async (
@@ -146,10 +156,12 @@ export const runDevtoWorkflow = async (
 
     try {
       const apiResponse = await createOrUpdateDevtoArticle(apiKey, existingEntry?.id, articlePayload);
+      const updatedAt = apiResponse.edited_at ?? apiResponse.updated_at ?? apiResponse.published_at ?? new Date().toISOString();
       postMap[relativePath] = {
         id: apiResponse.id,
         url: apiResponse.url,
-        updatedAt: apiResponse.updated_at,
+        updatedAt,
+        publishedAt: apiResponse.published_at,
         published: shouldPublish
       };
       console.log(`${existingEntry ? 'Updated' : 'Created'} dev.to ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`);
