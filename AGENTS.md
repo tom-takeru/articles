@@ -19,6 +19,7 @@
 - Use TypeScript with two-space indentation, `const` by default, and `camelCase` variables/functions. Reserve `PascalCase` for types and exported classes.
 - Keep modules focused; co-locate utilities near publishing scripts instead of global helpers until reuse is proven.
 - Front matter must include `title`; optional keys (`tags`, `platform`, `qiita_org`, etc.) align with downstream platform schemas. Publishing mode is controlled by the `PUBLISH_MODE` environment variable when running scripts.
+- When drafting articles, avoid heavy use of bold text combined with nested lists and indentation; prefer structuring content with headers instead.
 
 ## Testing Guidelines
 
