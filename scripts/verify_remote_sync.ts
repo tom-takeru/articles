@@ -8,8 +8,10 @@ type DevToArticle = {
   title: string;
   body_markdown: string;
   url?: string;
-  published: boolean;
+  published?: boolean;
   updated_at?: string;
+  published_at?: string | null;
+  published_timestamp?: string | null;
 };
 
 type QiitaItem = {
@@ -26,6 +28,7 @@ type PostMapEntry = {
   url?: string;
   updatedAt?: string;
   published?: boolean;
+  publishedAt?: string;
 };
 
 type PostMap = Record<string, PostMapEntry>;
@@ -118,10 +121,23 @@ const verifyDevToEntries = async (map: PostMap, token: string): Promise<Verifica
         });
       }
 
-      if (typeof entry.published === 'boolean' && entry.published !== article.published) {
+      const remotePublished =
+        typeof article.published === 'boolean'
+          ? article.published
+          : Boolean(article.published_at ?? article.published_timestamp);
+
+      if (typeof entry.published === 'boolean' && entry.published !== remotePublished) {
         errors.push({
           file: relativePath,
           message: 'Stored published flag for dev.to entry is out of sync with remote state.'
+        });
+      }
+
+      const remotePublishedAt = article.published_at ?? article.published_timestamp ?? undefined;
+      if (entry.publishedAt && remotePublishedAt && entry.publishedAt !== remotePublishedAt) {
+        errors.push({
+          file: relativePath,
+          message: 'Stored dev.to publishedAt differs from remote published timestamp.'
         });
       }
 
