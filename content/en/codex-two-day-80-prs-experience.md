@@ -10,17 +10,17 @@ qiita_org: "habitatHub"
 
 ## TL;DR
 
-- Codex is the ultimate development environment if you already pay for ChatGPT Plus—parallel tasks and even mobile development made pushing almost 80 PRs in two days feel attainable.
-- Leaning on Codex Web for direction, Codex CLI for precision edits, and Ask-driven idea generation sent my development throughput soaring.
-- Next up, I want to explore the review feature, dig deeper into the CLI, and benchmark other assistants so I can shift more energy into deciding what to build.
+- Codex is the ultimate development environment if you already pay for ChatGPT Plus—parallel tasks and even mobile development made shipping almost 80 PRs in two days feel realistic.
+- Leaning on Codex Web as the hub, Codex CLI for precision edits, and splitting work across multiple environments with Ask-driven ideation sent my throughput skyrocketing.
+- Next I want to stress-test the review feature, dig deeper into the CLI, and benchmark other assistants while pairing those experiments with stronger planning and architecture instincts so I can focus on deciding what to build.
 
 ## Introduction
 
-I recently shipped almost 80 pull requests in just two days on a personal project. This article reorganizes that experience so you can see how I combine Codex Web and Codex CLI, from the background and setup to the workflow details and future plans.
+Over two intense days of personal development I created nearly 80 pull requests. This article reorganizes that experience so you can see, at a glance, why Codex Web and Codex CLI together made it possible—from the background and motivation to the workflow details and what I plan to explore next.
 
 ## Background & Self-Introduction
 
-I am a board-game-loving full-stack engineer. I am constantly experimenting with LLM-powered coding assistants, and here is what I recently use:
+I am a board-game-loving full-stack engineer who constantly experiments with LLM-powered coding assistants. Here is how my current toolkit looks.
 
 ### My Current LLM Toolkit
 
@@ -38,13 +38,15 @@ I am a board-game-loving full-stack engineer. I am constantly experimenting with
   - Hammering it daily over the past month as well
   - I even hit the ChatGPT Plus usage limit screen:
 
+CLI output when the limit triggers:
+
 ```console
 ▌🖐  You've hit your usage limit. Upgrade to Pro (https://openai.com/chatgpt/pricing)
 ▌or try again in 19
 ▌hours 59 minutes.
 ```
 
-Here is the usage overlay that recently shipped (you can now see the 5h and weekly limits):
+Recently released usage overlay (the new 5h and weekly limits are visible):
 
 ```console
 ╭──────────────────────────────────────────────────────────────────────────╮
@@ -66,131 +68,142 @@ Here is the usage overlay that recently shipped (you can now see the 5h and week
 
 ## How I Think About Codex
 
-- Codex is the LLM coding assistant service that perfectly matches my needs.
-- It ships both a web interface and a CLI, and Codex Web in particular blew me away.
+- Codex is the LLM coding assistant service that perfectly fits my needs.
+- It ships both a web interface and a CLI, and Codex Web in particular blew me away with how it handles multi-tasking.
 
 ## Why I Started Using Codex
 
-- Claude Code inside neovim showed me how powerful an LLM CLI could be for work, so I started searching for a service I could rely on in personal side projects.
-- When I heard that my existing ChatGPT Plus subscription unlocked the Codex CLI, I jumped in immediately.
+- Claude Code running inside neovim showed me how powerful an LLM CLI could be at work, so I started searching for something I could lean on for side projects.
+- When I heard that my existing ChatGPT Plus subscription unlocked Codex CLI, I jumped in immediately.
 
 ## How Codex Changed My Throughput
 
-Subjectively, **my development throughput jumped several times over**. Here is the difference in what I could accomplish in the same amount of time:
+Subjectively, **my development throughput jumped several times over**. In the same amount of time:
 
-- When using a single LLM locally via the CLI
-  - Work on two PRs locally, one after another, then merge them sequentially
-- When using Codex Web to run LLMs in parallel across multiple environments
-  - Drive five PRs in parallel, only doing verification and small fixes before merging the ones that are ready
+- When I used a single LLM locally via the CLI
+  - I would work on two PRs sequentially and merge them one by one.
+- When I let Codex Web run multiple environments in parallel
+  - I could drive five PRs simultaneously, only hopping in to verify or apply tiny fixes before merging the ones that were ready.
 
 ## Pricing and Coverage
 
-- Cost
-  - Only [ChatGPT Plus](https://openai.com/chatgpt/pricing) at $20/month (no additional Codex fee)
+- Plan
+  - [ChatGPT Plus](https://openai.com/chatgpt/pricing) only—$20/month with no additional Codex fee
 - Coverage
   - Includes ChatGPT, Codex Web, and Codex CLI
 
 ## Why Codex—Especially Codex Web—Stands Out
 
-Combining Codex Web and Codex CLI reshaped task management and the overall development experience for me.
+Combining Codex Web and Codex CLI reshaped how I manage tasks and experience development. Breaking it down highlights where the acceleration comes from.
 
 ### Parallel Task Execution
 
-- Point Codex at a repository to create an Environment and it clones the repo into its own isolated workspace.
+- Create an Environment by pointing Codex at a repository and it clones the repo into its own isolated workspace.
 - Multiple instructions progress simultaneously inside their own sandboxes.
-- It genuinely feels like managing a team of engineers.
+- It genuinely feels like managing a team of engineers from a lead’s cockpit.
 
-![Codex Web progressing tasks in parallel](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/2489161f-d654-47f4-87c5-f0319336ccf4.png)
+![Codex Web running multiple tasks in parallel](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/2489161f-d654-47f4-87c5-f0319336ccf4.png)
 
 ### PR Creation Speed
 
 - Review rough drafts in the browser, request fixes if needed, and create a PR (Drafts included) with a single click.
 
+Screens that show the diff review and PR creation experience in Codex Web:
+
+| Codex Web displaying task diff after completion | Pull request generated via the Codex Web Push button |
+| :--------------------------------------------: | :---------------------------------------------------: |
+| ![Codex Web showing a completed task diff](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/d441358b-458d-416c-8788-1d1bf1356f69.png) | ![Pull request created from Codex Web Push button](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/9d493934-10f4-4fe0-b109-0c8091513858.png) |
+
 ### Idea Generation via Ask
 
-- Ask Codex for prompts like “Give me three small refactoring ideas.”
-- → Press Start Task to get Codex moving instantly.
+- Ask Codex for prompts like “Give me three small refactoring ideas,” then hit Start Task to spin them into runnable work immediately.
+
+Screens that show how Ask suggestions flow into actual tasks:
+
+| Ask surface listing refactoring ideas | Starting a task directly from an Ask suggestion | Codex Web running multiple Ask-derived tasks in parallel |
+| :-----------------------------------: | :---------------------------------------------: | :------------------------------------------------------: |
+| ![Ask feature suggesting refactoring ideas](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/b34a107c-f341-4008-a02e-88cf7004e641.png) | ![Starting a task from an Ask suggestion](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/d97bacfb-5f0d-4708-a006-1c0d73eef6a3.png) | ![Codex processing multiple Ask-derived tasks](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/40348518-8347-4bae-944e-fc4c887040a9.png) |
 
 ### Development from a Phone
 
-- I used to stop at reviewing diffs in the GitHub app, but now I can inspect diffs and ship changes from my phone.
+- I used to stop at reviewing diffs in the GitHub app, but now I can inspect diffs and ship changes end-to-end from my phone.
 
-|                                                                                                                                                |                                                                                                                                      |                                                                                                                                                   |
-| :--------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------: |
+| Mobile task list inside the ChatGPT app | Summary view for a specific task | Task diff and Push (Create PR) button on mobile |
+| :------------------------------------: | :--------------------------------: | :---------------------------------------------: |
 | ![Mobile development experience - Task list in the ChatGPT app](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/045102b6-c098-4c15-8ef8-68053fb8dab0.jpeg) | ![Mobile development experience - Summary view of a task](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/9d19e54c-328c-4990-8196-638fcd726cc1.jpeg) | ![Mobile development experience - Task diff and Push (Create PR) button](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/bd6b3c32-9bad-4862-929c-ba3c87cef76b.jpeg) |
 
-## My Codex-Powered Workflow
+## Codex Power-Use Playbook
 
-Codex Web remains the hub, while the CLI and prompt design let me keep the pace high.
+Codex Web sits at the center while the CLI and prompt design keep the pace high. This is the foundation I rely on.
 
-### Tip 1: Default to Codex Web
+### Tip 1: Lead With Codex Web
 
 - Finish most development tasks entirely in the browser.
-- Split instructions by scope to encourage parallel work and avoid conflicts.
+- Split instructions by scope so work progresses in parallel without stepping on itself.
 
 ### Tip 2: Use Codex CLI for Surgical Edits
 
-- Handle UI tweaks or quick adjustments directly in the CLI.
-- You can run LLM in multiple environments with the Codex CLI by cloning the repository to multiple directories. Of course you still need to consider avoiding conflicts. However, it can easily reach the Codex CLI usage limit, so I recommend using my approach to save on this.
+- Apply UI tweaks or rapid validation directly from the CLI.
+- Clone the repository into multiple directories to run Codex CLI across several environments. You still need to watch for conflicts, and it is easy to hit the Codex CLI quota, so this setup helps save that budget.
 
 ### Tip 3: Shape Prompts Carefully
 
-- Frame requests as “the smallest steps that satisfy the requirement.”
-- Think about scope boundaries to avoid conflicts.
-- If a conflict appears anyway, rebase locally and resolve with the CLI.
+- Break requests into “the smallest steps that satisfy the requirement.”
+- Define scope boundaries up front to avoid conflicts.
+- If something collides anyway, rebase locally and resolve with the CLI.
 
 ## Case Study: Shipping ~80 PRs in Two Days
 
-This happened while building a subscription-based product I am working on. The repository has been active for about half a year and has already closed roughly 400 PRs covering dev-environment improvements, library upgrades, UI polish, and mid-sized feature work.
+This burst happened while building a subscription-style product I am developing. The repository has been active for about six months and has already closed roughly 400 PRs spanning dev-environment improvements, library upgrades, UI polish, and mid-sized feature additions.
 
 ### Step-by-Step Loop
 
 1. Request tasks in parallel
-   - Assign around five tasks to Codex Web at once while keeping an eye on merge conflicts.
+   - Hand Codex Web around five tasks at a time while being mindful of conflict risk.
 2. Create PRs
-   - Skim the output, and if it looks good, convert it into a PR right away.
-   - If it is off, point out the issues and rerun.
+   - Skim the output and, if it looks good, turn it into a PR immediately.
+   - If something is off, highlight the issues and rerun the task.
 3. Handle CI and reviews
-   - When CI finishes, address comments from Coderabbit or failures by pulling the remote branch.
-   - Combine Codex CLI with GitHub MCP to respond to reviews and push follow-up commits automatically.
+   - When CI finishes, respond to Coderabbit comments or failures by pulling the remote branch.
+   - Combine Codex CLI with GitHub MCP so review follow-ups and pushes happen automatically from the PR link.
 4. Merge
-   - Once the comments and CI are green, manually run verification and merge.
-5. Reuse the idle time
-   - While waiting for reviews or CI, jump back to other PRs and continue from step 3.
+   - Once the feedback and CI are clear, run manual verification and merge.
+5. Reuse idle time
+   - While waiting for reviews or CI, hop back to other PRs and resume from step 3.
 
-With this loop, **I realized I had nearly 80 PRs ready within just two days.**
+Running this loop meant that **I looked up mid-session and realized nearly 80 PRs were ready in just two days.**
 
 ## What's Next
 
 - Review feature
-  - Drafts are produced by AI and humans handle the reviews today, but I want to explore Codex review capabilities.
-  - The new `/review` command in Codex CLI looks promising.
+  - Drafts are produced by AI and humans lead reviews today, but I want to try Codex’s review capabilities.
+  - The newly added `/review` command in Codex CLI looks especially promising.
 - Deeper CLI usage
-  - The web app is still my main driver, but I am convinced there are hidden gems in the CLI.
+  - The web app is still my primary driver, yet I am convinced there are hidden gems left in the CLI.
 - Tool benchmarking
-  - I plan to keep using Claude Code and Coderabbit alongside Codex to leverage each tool’s strengths.
+  - I plan to keep using Claude Code and Coderabbit alongside Codex so each tool can play to its strengths.
 
 ## Reflections
 
-- Codex feels red-hot right now, with updates seemingly landing every two days from my perspective.
+- Codex feels red-hot right now, with updates seemingly landing every two days.
   - https://github.com/openai/codex/releases
 - Thinking hard about “what to build” matters even more.
-  - Engineers will increasingly win by designing the direction, not just writing code.
+  - Engineers will win by designing direction, not just writing code.
 - Codex Web genuinely feels like a manager’s console.
   - It is like coordinating four or five engineers, setting direction, and reviewing their code.
 - Task decomposition precision is crucial.
-  - The finer you can split work before handing it to the Codex “engineers,” the better the outcomes.
+  - The finer you split work before handing it to the Codex “engineers,” the better the outcome.
 - Architecture understanding is valuable.
   - When the human understands the full picture, it is easier to define steps and delegate them.
 - Right now it still favors engineers.
-  - At this stage, engineers are the ones squeezing the most value out of it.
+  - At this stage, engineers squeeze the most value out of the toolset.
 - The next battleground is deciding what to build.
-  - As AI tooling becomes accessible to everyone, the premise shifts to “you can build anything,” and creativity becomes the differentiator.
+  - As AI tooling becomes accessible to everyone, the default becomes “you can build anything,” so creativity and planning take center stage.
 
 ## Key Takeaways
 
-- Codex is the ultimate development environment if you already pay for ChatGPT Plus—no extra cost.
-- The combination of Codex Web for direction and Codex CLI for precision edits unlocks a new development rhythm.
-- Parallel tasks and mobile development feel like switching from walking to riding a bike (if not a car).
+- Codex is the ultimate development environment if you already pay for ChatGPT Plus—no additional fee.
+- Pairing Codex Web for direction with Codex CLI for precision edits unlocks a new development rhythm.
+- Parallel tasks and mobile development feel like switching from walking to riding a bike—maybe even jumping into a car.
 - Shipping roughly 80 PRs in two days is absolutely doable.
 
