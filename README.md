@@ -6,7 +6,8 @@ This repository lets you manage English and Japanese articles locally while publ
 
 - `content/en/` — English Markdown articles that target dev.to.
 - `content/ja/` — Japanese Markdown articles that target Qiita.
-- `scripts/` — Publishing workflows plus the unified CLI entry point (`entryPoint.ts`).
+- `scripts/` — Publishing workflows plus the unified CLI entry point (`entryPoint.ts`). Platform logic lives in
+  `platform/devto.ts` and `platform/qiita.ts`.
 - `.posts-map.devto.json` / `.posts-map.qiita.json` — Maps article file paths to remote post IDs, URLs, timestamps, and publish state. Local runs keep these files in sync.
 
 ## Setup
