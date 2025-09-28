@@ -107,7 +107,7 @@ export const runPublishingWorkflow = async <
     if (!fs.existsSync(absolutePath)) {
       if (postMap[relativePath]) {
         delete postMap[relativePath];
-        console.log(`Removed stale ${adapter.platformName} mapping for ${relativePath} (file not found)`);
+        console.log(`Cleanup: removed stale ${adapter.platformName} mapping for ${relativePath} (file not found)`);
       }
       console.warn(`Skipped: ${fileArg} (file not found)`);
       continue;
@@ -133,7 +133,7 @@ export const runPublishingWorkflow = async <
       if (postMap[relativePath]) {
         delete postMap[relativePath];
         console.log(
-          `Removed stale ${adapter.platformName} mapping for ${relativePath} (platform excludes ${adapter.platformName})`,
+          `Cleanup: removed stale ${adapter.platformName} mapping for ${relativePath} (platform excludes ${adapter.platformName})`,
         );
       }
       console.log(`Skipped: ${relativePath} (platform excludes ${adapter.platformName})`);
@@ -210,7 +210,7 @@ export const runPublishingWorkflow = async <
       if (apiError.status === 404 && existingEntry) {
         delete postMap[relativePath];
         console.warn(
-          `Remote ${adapter.platformName} ${shouldPublish ? 'article' : 'draft'} for ${relativePath} is missing (404). Removed mapping so it will be recreated on the next run.`,
+          `Remote ${adapter.platformName} ${shouldPublish ? 'article' : 'draft'} for ${relativePath} is missing (404). Cleanup removed the mapping so it will be recreated on the next run.`,
         );
       }
       const statusInfo = typeof apiError.status === 'number' ? ` [HTTP ${apiError.status}]` : '';
