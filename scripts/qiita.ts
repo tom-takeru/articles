@@ -143,13 +143,15 @@ export const runQiitaWorkflow = async (
       continue;
     }
 
+    const organizationUrlName = frontMatter.qiita_org?.trim();
+
     const itemPayload = {
       title: frontMatter.title,
       body: parsed.content.trim(),
       tags: toQiitaTags(tags),
       private: !shouldPublish,
       coediting: false,
-      group_url_name: frontMatter.qiita_org,
+      ...(organizationUrlName ? { organization_url_name: organizationUrlName } : {}),
       tweet: false
     };
 
