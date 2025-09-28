@@ -2,16 +2,7 @@ import fetch from 'node-fetch';
 
 import { createHttpError, ensureArrayOfStrings, wantsPlatform } from './utils';
 import { PublishingAdapter, runPublishingWorkflow, ValidationResult } from './workflows/base';
-
-type QiitaFrontMatter = {
-  title?: string;
-  tags?: string[] | string;
-  canonical_url?: string;
-  cover_image?: string;
-  series?: string;
-  platform?: string | string[];
-  qiita_org?: string;
-};
+import type { QiitaFrontMatter } from './content/front_matter';
 
 type QiitaPostMapEntry = {
   id: string;
@@ -106,7 +97,7 @@ export const runQiitaWorkflow = async (
         tags: toQiitaTags(sanitizedData?.tags),
         private: !shouldPublish,
         coediting: false,
-        ...(organizationUrlName ? { organization_url_name: organizationUrlName } : {}),
+        ...(organizationUrlName ? { group_url_name: organizationUrlName } : {}),
         tweet: false
       };
     },
