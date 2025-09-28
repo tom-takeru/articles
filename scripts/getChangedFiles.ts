@@ -1,6 +1,9 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import {
+  collectContentFilesFromGitStatus,
+  findMissingPostMapEntries,
+  isContentMarkdown,
+  splitContentFilesByLocale,
+} from './utils';
 
 /**
  * Get markdown files that have changed since the last commit
@@ -9,43 +12,32 @@ import path from 'path';
 const getChangedMarkdownFiles = (): { en: string[]; ja: string[] } => {
   try {
     // Get files changed in the working directory (staged + unstaged)
-    const diffOutput = execSync('git diff --name-only HEAD', {
-      encoding: 'utf-8',
-      cwd: process.cwd()
-    }).trim();
+    const changedFilesSet = collectContentFilesFromGitStatus();
+    const missingFromMaps = findMissingPostMapEntries(isContentMarkdown);
+    const missingByRelativePath = new Map<string, Set<string>>();
 
-    // Capture untracked files (e.g., new drafts not yet staged)
-    const untrackedOutput = execSync('git ls-files --others --exclude-standard', {
-      encoding: 'utf-8',
-      cwd: process.cwd()
-    }).trim();
+    for (const { relativePath, mapFile } of missingFromMaps) {
+      changedFilesSet.add(relativePath);
 
-    const changedFilesSet = new Set<string>();
-
-    if (diffOutput) {
-      diffOutput
-        .split('\n')
-        .filter(Boolean)
-        .forEach(file => changedFilesSet.add(file));
+      if (!missingByRelativePath.has(relativePath)) {
+        missingByRelativePath.set(relativePath, new Set());
+      }
+      missingByRelativePath.get(relativePath)?.add(mapFile);
     }
 
-    if (untrackedOutput) {
-      untrackedOutput
-        .split('\n')
-        .filter(Boolean)
-        .forEach(file => changedFilesSet.add(file));
+    const { en, ja } = splitContentFilesByLocale(changedFilesSet);
+
+    if (missingByRelativePath.size > 0) {
+      console.log(
+        'Detected published mapping entries without source files (including drafts deleted before their first commit). They will be cleaned up:',
+      );
+      for (const [relativePath, mapFiles] of missingByRelativePath.entries()) {
+        const mapList = Array.from(mapFiles).join(', ');
+        console.log(`  ${relativePath} -> ${mapList}`);
+      }
     }
 
-    const markdownFiles = Array.from(changedFilesSet).filter(file =>
-      file.endsWith('.md') &&
-      (file.startsWith('content/en/') || file.startsWith('content/ja/')) &&
-      fs.existsSync(path.resolve(file))
-    );
-
-    const enFiles = markdownFiles.filter(file => file.startsWith('content/en/'));
-    const jaFiles = markdownFiles.filter(file => file.startsWith('content/ja/'));
-
-    return { en: enFiles, ja: jaFiles };
+    return { en, ja };
   } catch (error) {
     console.error('Error detecting changed files:', (error as Error).message);
     process.exitCode = 1;
@@ -55,7 +47,7 @@ const getChangedMarkdownFiles = (): { en: string[]; ja: string[] } => {
 
 const main = (): void => {
   const changedFiles = getChangedMarkdownFiles();
-  
+
   if (changedFiles.en.length === 0 && changedFiles.ja.length === 0) {
     console.log('No changed markdown files found.');
     return;
