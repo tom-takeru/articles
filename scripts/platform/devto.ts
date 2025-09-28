@@ -1,8 +1,11 @@
 import fetch from 'node-fetch';
 
-import { createHttpError } from '../utils/http';
-import { ensureArrayOfStrings, type DevtoFrontMatter } from '../utils/frontMatter';
-import { wantsPlatform } from '../utils/platform';
+import {
+  createHttpError,
+  ensureArrayOfStrings,
+  wantsPlatform,
+  type DevtoFrontMatter,
+} from '../utils';
 import { PublishingAdapter, runPublishingWorkflow } from '../publishingWorkflowRunner';
 
 type DevtoPostMapEntry = {
