@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import fetch from 'node-fetch';
 
-import { readContentFile } from './utils/frontMatter';
+import { readContentFile } from './utils';
 
 type DevToArticle = {
   id: number;
