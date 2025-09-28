@@ -1,7 +1,23 @@
 import fs from 'fs';
 import matter from 'gray-matter';
 
-import type { PlatformValue } from '../utils';
+import type { PlatformValue } from './platform';
+
+export const ensureArrayOfStrings = (value: unknown): string[] | undefined => {
+  if (value === undefined || value === null) return undefined;
+
+  const list = Array.isArray(value)
+    ? value
+    : String(value)
+        .split(',')
+        .map(item => item.trim());
+
+  const normalized = list
+    .map(item => String(item).trim())
+    .filter(item => item.length > 0);
+
+  return normalized.length > 0 ? normalized : undefined;
+};
 
 export type ContentFrontMatter<T extends Record<string, unknown> = Record<string, unknown>> = {
   title: string;
@@ -16,21 +32,6 @@ export type ParsedContent<T extends Record<string, unknown> = Record<string, unk
 
 export type ParseOptions = {
   filePath?: string;
-};
-
-const normalizeTags = (value: unknown): string[] | undefined => {
-  if (!value) return undefined;
-  const list = Array.isArray(value)
-    ? value
-    : String(value)
-        .split(',')
-        .map(item => item.trim());
-
-  const normalized = list
-    .map(item => String(item).trim())
-    .filter(item => item.length > 0);
-
-  return normalized.length > 0 ? normalized : undefined;
 };
 
 const normalizePlatform = (value: unknown): PlatformValue => {
@@ -67,13 +68,13 @@ export const parseFrontMatter = <T extends Record<string, unknown> = Record<stri
   const frontMatter: ContentFrontMatter<T> = {
     ...(rest as T),
     title,
-    tags: normalizeTags(rawTags),
-    platform: normalizePlatform(rawPlatform)
+    tags: ensureArrayOfStrings(rawTags),
+    platform: normalizePlatform(rawPlatform),
   };
 
   return {
     frontMatter,
-    body: normalizeContent(parsed.content)
+    body: normalizeContent(parsed.content),
   };
 };
 

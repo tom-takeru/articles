@@ -1,4 +1,4 @@
-import { runDevtoWorkflow } from './devto';
+import { runDevtoWorkflow } from './devTo';
 import { runQiitaWorkflow } from './qiita';
 
 type Platform = 'devto' | 'qiita';
