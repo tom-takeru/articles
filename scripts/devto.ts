@@ -1,16 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import fetch from 'node-fetch';
 
-import {
-  HttpError,
-  createHttpError,
-  ensureArrayOfStrings,
-  loadPostMap,
-  savePostMap,
-  wantsPlatform
-} from './utils';
+import { createHttpError, ensureArrayOfStrings, wantsPlatform } from './utils';
+import { PublishingAdapter, runPublishingWorkflow } from './workflows/base';
 
 type DevtoFrontMatter = {
   title?: string;
@@ -74,6 +65,51 @@ const createOrUpdateDevtoArticle = async (
   return (await response.json()) as DevtoApiArticle;
 };
 
+const createDevtoAdapter = (
+  apiKey: string,
+): PublishingAdapter<DevtoFrontMatter, DevtoPostMapEntry, DevtoApiArticle> => ({
+  platformName: 'dev.to',
+  mapFilename: DEVTO_POST_MAP,
+  isPlatformEnabled: frontMatter => wantsDevto(frontMatter.platform),
+  validateFrontMatter: () => ({ isValid: true }),
+  preparePayload: ({ frontMatter, content, shouldPublish }) => {
+    const tags = ensureArrayOfStrings(frontMatter.tags);
+    return {
+      article: {
+        title: frontMatter.title,
+        published: shouldPublish,
+        body_markdown: content,
+        tags,
+        canonical_url: frontMatter.canonical_url,
+        cover_image: frontMatter.cover_image,
+        series: frontMatter.series,
+        organization_id: frontMatter.organization_id
+      }
+    };
+  },
+  performRequest: ({ payload, existingEntry }) =>
+    createOrUpdateDevtoArticle(apiKey, existingEntry?.id, payload),
+  synchronizePostMapEntry: ({
+    frontMatter,
+    existingEntry,
+    response,
+    shouldPublish,
+  }) => {
+    const updatedAt =
+      response.edited_at ?? response.updated_at ?? response.published_at ?? new Date().toISOString();
+    return {
+      entry: {
+        id: response.id,
+        url: response.url,
+        updatedAt,
+        publishedAt: response.published_at,
+        published: shouldPublish
+      },
+      message: `${existingEntry ? 'Updated' : 'Created'} dev.to ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`
+    };
+  }
+});
+
 export const runDevtoWorkflow = async (
   fileArgs: string[],
   shouldPublish: boolean,
@@ -88,96 +124,6 @@ export const runDevtoWorkflow = async (
     return;
   }
 
-  const mapPath = path.resolve(DEVTO_POST_MAP);
-  console.log(`dev.to publishing mode: ${shouldPublish ? 'publish' : 'draft'}`);
-  const postMap = loadPostMap<DevtoPostMapEntry>(mapPath);
-
-  for (const fileArg of fileArgs) {
-    const absolutePath = path.resolve(fileArg);
-    const relativePath = path.relative(process.cwd(), absolutePath);
-
-    if (!fs.existsSync(absolutePath)) {
-      if (postMap[relativePath]) {
-        delete postMap[relativePath];
-        console.log(`Removed stale dev.to mapping for ${relativePath} (file not found)`);
-      }
-      console.warn(`Skipped: ${fileArg} (file not found)`);
-      continue;
-    }
-
-    const rawMarkdown = fs.readFileSync(absolutePath, 'utf-8');
-    const parsed = matter(rawMarkdown);
-    const frontMatter = parsed.data as DevtoFrontMatter;
-
-    if (!frontMatter.title) {
-      console.warn(`Skipped: ${relativePath} (missing required front matter field: title)`);
-      continue;
-    }
-
-    if (!wantsDevto(frontMatter.platform)) {
-      if (postMap[relativePath]) {
-        delete postMap[relativePath];
-        console.log(`Removed stale dev.to mapping for ${relativePath} (platform excludes dev.to)`);
-      }
-      console.log(`Skipped: ${relativePath} (platform excludes dev.to)`);
-      continue;
-    }
-
-    const existingEntry = postMap[relativePath];
-
-    if (shouldPublish) {
-      if (!existingEntry) {
-        console.error(`Error: ${relativePath} - Cannot publish without creating a draft first. Run 'make draft' first.`);
-        process.exitCode = 1;
-        continue;
-      }
-    } else if (existingEntry?.published === true) {
-      console.error(
-        `Error: ${relativePath} - Cannot create/update draft for already published article. This would overwrite the published version.`,
-      );
-      process.exitCode = 1;
-      continue;
-    }
-
-    const tags = ensureArrayOfStrings(frontMatter.tags);
-
-    const articlePayload = {
-      article: {
-        title: frontMatter.title,
-        published: shouldPublish,
-        body_markdown: parsed.content.trim(),
-        tags,
-        canonical_url: frontMatter.canonical_url,
-        cover_image: frontMatter.cover_image,
-        series: frontMatter.series,
-        organization_id: frontMatter.organization_id
-      }
-    };
-
-    try {
-      const apiResponse = await createOrUpdateDevtoArticle(apiKey, existingEntry?.id, articlePayload);
-      const updatedAt = apiResponse.edited_at ?? apiResponse.updated_at ?? apiResponse.published_at ?? new Date().toISOString();
-      postMap[relativePath] = {
-        id: apiResponse.id,
-        url: apiResponse.url,
-        updatedAt,
-        publishedAt: apiResponse.published_at,
-        published: shouldPublish
-      };
-      console.log(`${existingEntry ? 'Updated' : 'Created'} dev.to ${shouldPublish ? 'article' : 'draft'}: ${frontMatter.title}`);
-    } catch (error) {
-      const apiError = error as HttpError;
-      if (apiError.status === 404 && existingEntry) {
-        delete postMap[relativePath];
-        console.warn(
-          `Remote dev.to ${shouldPublish ? 'article' : 'draft'} for ${relativePath} is missing (404). Removed mapping so it will be recreated on the next run.`,
-        );
-      }
-      const statusInfo = typeof apiError.status === 'number' ? ` [HTTP ${apiError.status}]` : '';
-      console.error(`Failed to ${shouldPublish ? 'publish' : 'draft'} ${relativePath}${statusInfo}: ${apiError.message}`);
-      process.exitCode = 1;
-    }
-  }
-
-  savePostMap(mapPath, postMap);
+  const adapter = createDevtoAdapter(apiKey);
+  await runPublishingWorkflow({ fileArgs, shouldPublish, adapter });
 };
