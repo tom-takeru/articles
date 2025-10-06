@@ -39,11 +39,20 @@ platform: auto
 Body...
 ```
 
-- `tags`: Accepts an array or a comma-separated string. Qiita enforces between 1 and 5 tags per article, so keep your list withi
-n that range when targeting Qiita.
+- `tags`: Accepts an array or a comma-separated string. Qiita enforces between 1 and 5 tags per article, so keep your list within that range when targeting Qiita.
 - `platform`: Omit or set to `auto` to target both platforms. Include `devto` or `qiita` to limit publishing.
-- `qiita_org`: Optional Qiita group identifier for organizational posts.
-- dev.to-specific keys such as `canonical_url`, `cover_image`, `series`, and `organization_id` are supported.
+
+### Supported platform fields
+
+The publishing scripts only read a small set of optional fields per platform:
+
+| Platform | Optional front matter keys | Notes |
+| --- | --- | --- |
+| Shared | `tags`, `platform` | Parsed for every article regardless of destination. |
+| dev.to | `canonical_url`, `cover_image`, `series`, `organization_id` | Forwarded to the dev.to API when present. |
+| Qiita | `qiita_org` | Added to the Qiita payload as the group URL name when provided. |
+
+Any other keys are ignored by the automation, so omit them unless a downstream workflow needs them.
 
 ## Local Publishing
 
