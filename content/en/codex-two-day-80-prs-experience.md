@@ -12,7 +12,7 @@ qiita_org: "habitatHub"
 
 - Codex is the ultimate development environment if you already pay for ChatGPT Plus—parallel tasks and even mobile development made shipping almost 80 PRs in two days feel realistic.
 - Leaning on Codex Web as the hub, Codex CLI for precision edits, and splitting work across multiple environments with Ask-driven ideation sent my throughput skyrocketing.
-- Next I want to stress-test the review feature, dig deeper into the CLI, and benchmark other assistants while pairing those experiments with stronger planning and architecture instincts so I can focus on deciding what to build.
+- Going forward, engineers will compete less on implementation and more on "what to build," driven by planning and architectural insight.
 
 ## Introduction
 
@@ -20,7 +20,9 @@ Over two intense days of personal development I created nearly 80 pull requests.
 
 ## Background & Self-Introduction
 
-I am a board-game-loving full-stack engineer who constantly experiments with LLM-powered coding assistants. Here is how my current toolkit looks.
+I am a board-game-loving full-stack engineer who constantly experiments with LLM-powered coding assistants. For more details about me, please see [Getting Started with tom-takeru](https://tom-takeru.habitat-hub.com) and [GitHub | @tom-takeru](https://github.com/tom-takeru).
+
+Here is how my current toolkit looks.
 
 ### My Current LLM Toolkit
 
@@ -80,12 +82,10 @@ Recently released usage overlay (the new 5h and weekly limits are visible):
 
 Subjectively, **my development throughput jumped several times over**. In the same amount of time:
 
-- When I used a single LLM locally via the CLI
-  - I would work on two PRs sequentially and merge them one by one.
-- When I let Codex Web run multiple environments in parallel
-  - I could drive five PRs simultaneously, only hopping in to verify or apply tiny fixes before merging the ones that were ready.
+- **Working with a conventional LLM coding assistant:** Imagine you’re a single cook in a restaurant. You take an order, cook the dish, serve it, and only then can you start the next order.
+- **Working with Codex Web:** Now, imagine you’re the head chef of a large kitchen. You take five orders, hand them off to five different cooks, and they all work at the same time. You just check the dishes before they go out.
 
-## Pricing and Coverage
+## My Plan and Cost
 
 - Plan
   - [ChatGPT Plus](https://openai.com/chatgpt/pricing) only—$20/month with no additional Codex fee
@@ -150,11 +150,11 @@ Codex Web sits at the center while the CLI and prompt design keep the pace high.
 
 - Break requests into “the smallest steps that satisfy the requirement.”
 - Define scope boundaries up front to avoid conflicts.
-- If something collides anyway, rebase locally and resolve with the CLI.
+- If conflicts happen anyway, rebase locally and resolve with the CLI.
 
 ## Case Study: Shipping ~80 PRs in Two Days
 
-This burst happened while building a subscription-style product I am developing. The repository has been active for about six months and has already closed roughly 400 PRs spanning dev-environment improvements, library upgrades, UI polish, and mid-sized feature additions.
+This burst happened while building a subscription-style product I am developing. The repository has been active for about six months and has already closed roughly 400 PRs. The work I did this time included dev-environment improvements, library upgrades, UI polish, and mid-sized feature additions.
 
 ### Step-by-Step Loop
 
@@ -164,7 +164,7 @@ This burst happened while building a subscription-style product I am developing.
    - Skim the output and, if it looks good, turn it into a PR immediately.
    - If something is off, highlight the issues and rerun the task.
 3. Handle CI and reviews
-   - When CI finishes, respond to Coderabbit comments or failures by pulling the remote branch.
+   - When CI finishes, respond to CodeRabbit comments or failures by pulling the remote branch.
    - Combine Codex CLI with GitHub MCP so review follow-ups and pushes happen automatically from the PR link.
 4. Merge
    - Once the feedback and CI are clear, run manual verification and merge.
@@ -173,15 +173,15 @@ This burst happened while building a subscription-style product I am developing.
 
 Running this loop meant that **I looked up mid-session and realized nearly 80 PRs were ready in just two days.**
 
-## What's Next
+## What I'll Try Next
 
-- Review feature
+- GitHub reviews via Codex Web
   - Drafts are produced by AI and humans lead reviews today, but I want to try Codex’s review capabilities.
   - The newly added `/review` command in Codex CLI looks especially promising.
 - Deeper CLI usage
   - The web app is still my primary driver, yet I am convinced there are hidden gems left in the CLI.
 - Tool benchmarking
-  - I plan to keep using Claude Code and Coderabbit alongside Codex so each tool can play to its strengths.
+  - I plan to keep using Claude Code and CodeRabbit alongside Codex so each tool can play to its strengths.
 
 ## Reflections
 
@@ -206,4 +206,3 @@ Running this loop meant that **I looked up mid-session and realized nearly 80 PR
 - Pairing Codex Web for direction with Codex CLI for precision edits unlocks a new development rhythm.
 - Parallel tasks and mobile development feel like switching from walking to riding a bike—maybe even jumping into a car.
 - Shipping roughly 80 PRs in two days is absolutely doable.
-
