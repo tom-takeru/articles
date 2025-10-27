@@ -19,7 +19,7 @@ This article lays out why delivering in small increments matters, how to decide 
 
 ## Why staged rollouts matter
 
-### Preserve value by shipping in smaller slices
+### Unlock value faster by shipping in smaller slices
 
 Bundling everything into one launch keeps even finished functionality sitting on the shelf, pushing back the moment value reaches your users. Shipping a partial slice lets you invite them to try it without delay.
 
@@ -34,6 +34,13 @@ Watching how people use the slice you shipped makes it easier to decide whether 
 All-at-once launches widen the blast radius when something goes wrong and draw out recovery times. Rolling out in stages limits how many people feel the regression and lets you focus monitoring and support where the change actually happened.
 
 When each slice bakes in a risk review and clear rollback path, you can unwind issues quickly without denting user trust. The team stays confident and keeps improving the product deliberately.
+
+## Staged rollouts are like growing a tree
+
+A staged rollout is like nurturing a product as you would a tree.  
+You plant a small seedling (the first feature), observe its growth (user feedback), prune the branches (remove unnecessary parts), and add fertilizer (make improvements). Step by step, it grows stronger and healthier.
+
+![A flat-style digital illustration showing a potted plant with leaves shaped like UI elements, being watered, pruned, and fertilized by human hands — symbolizing staged rollouts and iterative software growth.](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/934995/f751ca91-e69a-4f5e-bd9e-ccce9e8dcecf.png)
 
 ## How to decide on the release units
 
