@@ -40,5 +40,12 @@
     "updatedAt": "2026-04-02T00:14:27Z",
     "publishedAt": "2026-04-02T00:14:27Z",
     "published": true
+  },
+  "content/en/ai-manager-perspective-code-review.md": {
+    "id": 4153682,
+    "url": "https://dev.to/tom-takeru/in-an-ai-builder-ai-reviewer-world-what-should-developers-actually-review-34oa",
+    "updatedAt": "2026-07-16T01:54:14Z",
+    "publishedAt": "2026-07-16T01:54:14Z",
+    "published": true
   }
 }
