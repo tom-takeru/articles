@@ -147,14 +147,17 @@ as sufficient: the per-file output can contain `Failed to draft` while the comma
 After the command:
 
 1. Confirm both per-file operations report `Created` or `Updated` rather than `Failed`.
-2. Run:
+2. Record the exact Japanese and English Markdown paths that were reviewed and drafted. Keep these
+   paths available for final publication because the draft and post-map changes may be committed
+   before the user gives final confirmation.
+3. Run:
 
    ```sh
    git diff -- .posts-map.devto.json .posts-map.qiita.json
    ```
 
-3. Confirm the expected entries have `published: false` and URLs.
-4. Report both draft URLs and tell the user that final publication is still pending.
+4. Confirm the expected entries have `published: false` and URLs.
+5. Report both draft URLs and tell the user that final publication is still pending.
 
 If one platform succeeds and the other fails, report the partial state precisely and do not retry
 blindly without checking the post maps.
@@ -166,7 +169,18 @@ Before running it:
 
 1. Confirm the intended changed files with `make changed-files`.
 2. Confirm the map entries correspond to the drafts the user reviewed.
-3. If an entry is already `published: true`, state that the operation will update live content and
+3. If the reviewed files are no longer listed because the draft and map changes were committed,
+   publish using the exact paths recorded during draft publication instead of relying on
+   `make changed-files`:
+
+   ```sh
+   npx ts-node scripts/entryPoint.ts --platform devto --mode publish content/en/<reviewed-slug>.md
+   npx ts-node scripts/entryPoint.ts --platform qiita --mode publish content/ja/<reviewed-slug>.md
+   ```
+
+   Pass every reviewed file explicitly when publishing more than one article. Do not guess a path;
+   if the reviewed paths are unavailable, stop and ask the user to confirm them.
+4. If an entry is already `published: true`, state that the operation will update live content and
    ask for confirmation if that intent is not already explicit.
 
 After the command:
